@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2, Play, RefreshCw, Search, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { clearImportRunsAction, reenrichImportRunAction, runOlxImportAction, run
 const initialOlxSearchImportState: OlxSearchImportState = {}
 
 export function RunOlxImportButton({ targetId }: { targetId: string }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -22,6 +24,7 @@ export function RunOlxImportButton({ targetId }: { targetId: string }) {
           const result = await runOlxImportAction(targetId)
           if (result.ok) {
             toast.success(result.message)
+            router.refresh()
           } else {
             toast.error(result.message)
           }
@@ -35,6 +38,7 @@ export function RunOlxImportButton({ targetId }: { targetId: string }) {
 }
 
 export function ClearImportRunsButton() {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -47,6 +51,7 @@ export function ClearImportRunsButton() {
           const result = await clearImportRunsAction()
           if (result.ok) {
             toast.success(result.message)
+            router.refresh()
           } else {
             toast.error(result.message)
           }
@@ -60,6 +65,7 @@ export function ClearImportRunsButton() {
 }
 
 export function ReenrichImportRunButton({ runId }: { runId: string }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -72,6 +78,7 @@ export function ReenrichImportRunButton({ runId }: { runId: string }) {
           const result = await reenrichImportRunAction(runId)
           if (result.ok) {
             toast.success(result.message)
+            router.refresh()
           } else {
             toast.error(result.message)
           }
@@ -85,6 +92,7 @@ export function ReenrichImportRunButton({ runId }: { runId: string }) {
 }
 
 export function SeedDefaultTargetsButton() {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -97,6 +105,7 @@ export function SeedDefaultTargetsButton() {
           const result = await seedDefaultImportTargetsAction()
           if (result.ok) {
             toast.success(result.message)
+            router.refresh()
           } else {
             toast.error(result.message)
           }
@@ -110,15 +119,17 @@ export function SeedDefaultTargetsButton() {
 }
 
 export function OlxSearchImportForm() {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(runOlxSearchImportAction, initialOlxSearchImportState)
   const previousPending = useRef(false)
 
   useEffect(() => {
     if (previousPending.current && !isPending && state.message && !state.errors) {
       toast.success(state.message)
+      router.refresh()
     }
     previousPending.current = isPending
-  }, [isPending, state])
+  }, [isPending, router, state])
 
   return (
     <form action={formAction} className="space-y-4 rounded-md border border-border bg-card p-4">

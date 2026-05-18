@@ -9,11 +9,11 @@ const require = createRequire(import.meta.url)
 // lib/scoring/data.js and lib/scoring/service.js
 // ---------------------------------------------------------------------------
 
-let upsertScore, getScoreHistory, getScore
+let upsertScore, getScoreHistory
 let scoreListingService
 
 try {
-  ;({ upsertScore, getScoreHistory, getScore } = require('../lib/scoring/data.js'))
+  ;({ upsertScore, getScoreHistory } = require('../lib/scoring/data.js'))
 } catch {
   // Wave 1 will create lib/scoring/data.js
 }
@@ -83,9 +83,9 @@ function makeSupabaseMockForUpsert(existingScoreVersion = null, savedRow = null)
         if (callCount === 1) {
           // First call: read score_version
           return {
-            select(_cols) {
+            select() {
               const chain = {
-                eq(_k, _v) { return chain },
+                eq() { return chain },
                 maybeSingle: async () => ({
                   data: existingScoreVersion !== null ? { score_version: existingScoreVersion } : null,
                   error: null,
@@ -261,10 +261,10 @@ test('SCO-11/SCO-20 recompute increments score_version: upsertScore reads existi
     from(table) {
       if (table === 'opportunity_scores') {
         return {
-          select(_cols) {
+          select() {
             // Read call: returns existing score_version = 3
             const chain = {
-              eq(_k, _v) { return chain },
+              eq() { return chain },
               maybeSingle: async () => ({ data: { score_version: 3 }, error: null }),
             }
             return chain

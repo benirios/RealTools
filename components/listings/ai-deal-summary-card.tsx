@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +42,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const status = summaryRow?.status ?? 'pending'
 
@@ -66,8 +68,12 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
             onClick={() => {
               startTransition(async () => {
                 const result = await regenerateAiDealSummaryAction(listingId)
-                if (result.ok) toast.success(result.message)
-                else toast.error(result.message)
+                if (result.ok) {
+                  toast.success(result.message)
+                  router.refresh()
+                } else {
+                  toast.error(result.message)
+                }
               })
             }}
           >
