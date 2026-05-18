@@ -277,6 +277,60 @@ export type Database = {
         }
         Relationships: []
       }
+      client_opportunities: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          last_action_at: string | null
+          match_score: number | null
+          notes: string | null
+          opportunity_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          last_action_at?: string | null
+          match_score?: number | null
+          notes?: string | null
+          opportunity_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          last_action_at?: string | null
+          match_score?: number | null
+          notes?: string | null
+          opportunity_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_opportunities_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_listing_matches: {
         Row: {
           breakdown: Json

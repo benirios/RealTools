@@ -31,7 +31,7 @@ export async function insertDealFileAction({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('deal_files') as any).insert(insertData)
 
-  if (error) return { error: 'Failed to save file record. Please try again.' }
+  if (error) return { error: 'Não foi possível salvar o registro do arquivo. Tente novamente.' }
 
   try {
     const serviceClient = createSupabaseServiceClient()
@@ -75,7 +75,7 @@ export async function deleteDealFileAction({
     .eq('id', fileId)
     .eq('user_id', user.id)
 
-  if (error) return { error: 'Failed to delete. Please try again.' }
+  if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
 
   revalidatePath(`/deals/${dealId}`)
   return {}

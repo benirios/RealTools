@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: investor } = await (supabase.from('investors') as any)
@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     .eq('user_id', user.id)
     .single()
 
-  if (!investor) return NextResponse.json({ error: 'Investor not found' }, { status: 404 })
+  if (!investor) return NextResponse.json({ error: 'Investidor não encontrado' }, { status: 404 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listings, error } = await (supabase.from('listings') as any)
@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     .order('created_at', { ascending: false })
     .limit(200)
 
-  if (error) return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Não foi possível carregar os imóveis' }, { status: 500 })
 
   const normalizedListings = (listings ?? []).map((listing: Record<string, unknown>) => {
     const enriched = enrichListingFields(listing)

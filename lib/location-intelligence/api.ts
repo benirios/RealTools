@@ -91,7 +91,7 @@ export async function resolveStandaloneLocationInsight(
 ): Promise<LocationInsightPersisted> {
   const parsed = CreateLocationInsightBodySchema.safeParse(input)
   if (!parsed.success) {
-    throw new Error('Invalid location insight payload.')
+    throw new Error('Payload de inteligência local inválido.')
   }
 
   const resolved = await resolveLocationIntelligence(parsed.data)
@@ -108,7 +108,7 @@ export async function persistStandaloneLocationInsight(
 ): Promise<{ data: LocationInsightPersisted | null; error: string | null }> {
   const parsed = CreateLocationInsightBodySchema.safeParse(insight)
   if (!parsed.success) {
-    return { data: null, error: 'Invalid location insight payload.' }
+    return { data: null, error: 'Payload de inteligência local inválido.' }
   }
 
   const resolved = await resolveLocationIntelligence(parsed.data)
@@ -161,7 +161,7 @@ export async function enrichListingLocationInsight(
 ): Promise<{ data: LocationInsightPersisted | null; error: string | null }> {
   const listing = await loadListingForUser(supabase, userId, listingId)
   if (!listing) {
-    return { data: null, error: 'Listing not found.' }
+    return { data: null, error: 'Imóvel não encontrado.' }
   }
 
   const resolved = await resolveLocationIntelligence(buildListingLocationInput(listing))
@@ -173,7 +173,7 @@ export async function normalizeCreateLocationInsightInput(
 ): Promise<{ data: LocationInsightInput | null; error: string | null }> {
   const parsed = CreateLocationInsightBodySchema.safeParse(input)
   if (!parsed.success) {
-    return { data: null, error: 'Invalid location insight payload.' }
+    return { data: null, error: 'Payload de inteligência local inválido.' }
   }
 
   return { data: parsed.data, error: null }
@@ -182,7 +182,7 @@ export async function normalizeCreateLocationInsightInput(
 export function parseListingLocationRequest(input: unknown): { data: { listingId: string } | null; error: string | null } {
   const parsed = ListingLocationInputSchema.safeParse(input)
   if (!parsed.success) {
-    return { data: null, error: 'Invalid listing id.' }
+    return { data: null, error: 'ID do imóvel inválido.' }
   }
 
   return { data: parsed.data, error: null }

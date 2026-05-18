@@ -9,6 +9,38 @@ function statusVariant(status: string) {
   return 'secondary' as const
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  strong: 'Forte',
+  medium: 'Médio',
+  weak: 'Fraco',
+}
+
+const CONFIDENCE_LABELS: Record<string, string> = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+}
+
+const STRATEGY_LABELS: Record<string, string> = {
+  any: 'Qualquer',
+  rental_income: 'Renda de aluguel',
+  retail: 'Varejo',
+  warehouse_logistics: 'Galpão / logística',
+  food_beverage: 'Alimentação',
+  pharmacy: 'Farmácia',
+  gym_fitness: 'Academia / fitness',
+  flip: 'Revenda',
+  own_business: 'Negócio próprio',
+  land_banking: 'Reserva de terreno',
+}
+
+const RISK_LABELS: Record<string, string> = {
+  any: 'qualquer',
+  low: 'baixo',
+  medium: 'médio',
+  high: 'alto',
+}
+
 function formatDate(value: string | null) {
   if (!value) return '-'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -41,12 +73,12 @@ export function ListingInvestorMatches({ matches }: { matches: PersistedListingM
                     {match.investor.name}
                   </Link>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {match.investor.strategy} · risco {match.investor.risk_level} · {formatDate(match.processed_at)}
+                    {STRATEGY_LABELS[match.investor.strategy] ?? match.investor.strategy} · risco {RISK_LABELS[match.investor.risk_level] ?? match.investor.risk_level} · {formatDate(match.processed_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusVariant(match.match_status)}>{match.match_status}</Badge>
-                  <Badge variant="outline">{match.confidence}</Badge>
+                  <Badge variant={statusVariant(match.match_status)}>{STATUS_LABELS[match.match_status] ?? match.match_status}</Badge>
+                  <Badge variant="outline">{CONFIDENCE_LABELS[match.confidence] ?? match.confidence}</Badge>
                   <span className="text-2xl font-semibold text-foreground">{match.match_score}%</span>
                 </div>
               </div>
@@ -56,23 +88,23 @@ export function ListingInvestorMatches({ matches }: { matches: PersistedListingM
               )}
               <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
                 <div className="rounded-md border border-border bg-background/50 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Forcas</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Forças</p>
                   {match.strengths.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-muted-foreground">
                       {match.strengths.slice(0, 3).map((strength) => <li key={strength}>{strength}</li>)}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-muted-foreground">Sem forcas principais registradas.</p>
+                    <p className="mt-2 text-muted-foreground">Sem forças principais registradas.</p>
                   )}
                 </div>
                 <div className="rounded-md border border-border bg-background/50 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Pontos de atencao</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Pontos de atenção</p>
                   {match.concerns.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-muted-foreground">
                       {match.concerns.slice(0, 3).map((concern) => <li key={concern}>{concern}</li>)}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-muted-foreground">Sem preocupacoes principais registradas.</p>
+                    <p className="mt-2 text-muted-foreground">Sem preocupações principais registradas.</p>
                   )}
                 </div>
               </div>

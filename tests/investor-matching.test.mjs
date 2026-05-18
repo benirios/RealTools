@@ -48,7 +48,7 @@ const baseDeal = {
 test('budget matching gives full score inside budget', () => {
   const result = calculateInvestorDealMatch(baseInvestor, baseDeal)
   assert.equal(result.breakdown.budget_fit, 100)
-  assert.ok(result.strengths.includes('Price fits the investor budget range.'))
+  assert.ok(result.strengths.includes('O preço está dentro da faixa de orçamento do investidor.'))
 })
 
 test('location matching gives full score for preferred neighborhood', () => {
@@ -73,8 +73,8 @@ test('opportunity score, strategy fit and local intelligence contribute to compa
 
   assert.equal(result.breakdown.strategy_fit, 86)
   assert.ok(result.breakdown.opportunity_quality >= 80)
-  assert.ok(result.strengths.includes('Universal opportunity score is strong.'))
-  assert.ok(result.strengths.includes('Local intelligence shows strong demographic and business signals.'))
+  assert.ok(result.strengths.includes('O score universal de oportunidade é forte.'))
+  assert.ok(result.strengths.includes('A inteligência local mostra sinais demográficos e comerciais fortes.'))
   assert.ok(result.explanation.includes('match'))
   assert.ok(['low', 'medium', 'high'].includes(result.confidence))
 })
@@ -116,5 +116,5 @@ test('deal above budget by up to 15 percent gets partial budget score', () => {
   })
 
   assert.equal(result.breakdown.budget_fit, 55)
-  assert.ok(result.concerns.includes('Price is slightly above budget but within 15% tolerance.'))
+  assert.ok(result.concerns.includes('O preço está um pouco acima do orçamento, mas dentro de uma tolerância de 15%.'))
 })

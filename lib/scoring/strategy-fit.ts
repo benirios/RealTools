@@ -95,7 +95,7 @@ export const STRATEGY_FIT_CONFIG: Record<StrategyFitSlug, StrategyFitConfig> = {
     conflicts: ['retail', 'store', 'loja', 'clothing', 'vestuario'],
   },
   warehouse_logistics: {
-    label: 'Galpao / Logistica',
+    label: 'Galpão / Logística',
     categoryWeights: { location: 0.42, demographics: 0.06, commercial_activity: 0.18, risk_adjusted: 0.34 },
     factorWeights: {
       roadAccess: 0.24,
@@ -124,7 +124,7 @@ export const STRATEGY_FIT_CONFIG: Record<StrategyFitSlug, StrategyFitConfig> = {
     conflicts: [],
   },
   food_beverage: {
-    label: 'Alimentacao',
+    label: 'Alimentação',
     categoryWeights: { location: 0.32, demographics: 0.18, commercial_activity: 0.36, risk_adjusted: 0.14 },
     factorWeights: {
       pedestrianTraffic: 0.20,
@@ -139,7 +139,7 @@ export const STRATEGY_FIT_CONFIG: Record<StrategyFitSlug, StrategyFitConfig> = {
     conflicts: ['restaurant', 'cafe', 'bakery', 'coffee', 'lanchonete', 'bar'],
   },
   pharmacy: {
-    label: 'Farmacia',
+    label: 'Farmácia',
     categoryWeights: { location: 0.24, demographics: 0.30, commercial_activity: 0.30, risk_adjusted: 0.16 },
     factorWeights: {
       residentialDensity: 0.20,
@@ -410,18 +410,18 @@ export function calculateStrategyFitScore(
   const weaknesses: string[] = []
   const bestFitReasons: string[] = []
 
-  addReason(strengths, breakdown.location >= 72, 'Localizacao favorece a estrategia selecionada.')
+  addReason(strengths, breakdown.location >= 72, 'Localização favorece a estratégia selecionada.')
   addReason(strengths, breakdown.demographics >= 72, 'Demografia compativel com a demanda esperada.')
   addReason(strengths, breakdown.commercial_activity >= 72, 'Atividade comercial proxima sustenta o uso.')
   addReason(strengths, breakdown.risk_adjusted >= 72, 'Perfil ajustado a risco e previsibilidade e favoravel.')
-  addReason(weaknesses, breakdown.location < 50, 'Localizacao tem sinais fracos para esta estrategia.')
+  addReason(weaknesses, breakdown.location < 50, 'Localização tem sinais fracos para esta estratégia.')
   addReason(weaknesses, breakdown.demographics < 50, 'Demografia disponivel nao sustenta bem a tese.')
   addReason(weaknesses, breakdown.commercial_activity < 50, 'Poucos sinais de atividade ou complementaridade comercial.')
   addReason(weaknesses, breakdown.risk_adjusted < 50, 'Risco ou eficiencia de preco reduzem a atratividade.')
   addReason(bestFitReasons, factors.pedestrianTraffic >= 75 && (config.factorWeights.pedestrianTraffic ?? 0) > 0, 'Bom potencial de fluxo de pedestres.')
   addReason(bestFitReasons, factors.roadAccess >= 75 && (config.factorWeights.roadAccess ?? 0) > 0, 'Acesso viario favorece operacao logistica.')
   addReason(bestFitReasons, factors.lowCompetition >= 75 && ((config.factorWeights.lowCompetition ?? 0) > 0 || (config.factorWeights.lowDirectCompetition ?? 0) > 0), 'Baixa concorrencia direta no entorno mapeado.')
-  addReason(bestFitReasons, factors.complementaryBusinesses >= 75 && (config.factorWeights.complementaryBusinesses ?? 0) > 0, 'Negocios complementares aumentam o encaixe comercial.')
+  addReason(bestFitReasons, factors.complementaryBusinesses >= 75 && (config.factorWeights.complementaryBusinesses ?? 0) > 0, 'Negócios complementares aumentam o encaixe comercial.')
   addReason(bestFitReasons, factors.stableCommerce >= 75 && (config.factorWeights.stableCommerce ?? 0) > 0, 'Sinais de comercio estavel reduzem risco de vacancia.')
   addReason(bestFitReasons, factors.residentialDensity >= 75 && (config.factorWeights.residentialDensity ?? 0) > 0, 'Densidade residencial sustenta demanda recorrente.')
 

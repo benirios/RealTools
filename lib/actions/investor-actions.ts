@@ -46,7 +46,7 @@ export async function createInvestorAction(
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors }
 
   const { data, error } = await createInvestor(supabase, user.id, parsed.data)
-  if (error) return { errors: { general: ['Failed to save investor. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar o investidor. Tente novamente.'] } }
 
   if (data?.id) {
     await recalculateMatchesForInvestor(supabase, user.id, data.id)
@@ -65,13 +65,13 @@ export async function updateInvestorAction(
   if (!user) redirect('/auth/login')
 
   const investorId = String(formData.get('investorId') ?? '')
-  if (!investorId) return { errors: { general: ['Missing investor ID.'] } }
+  if (!investorId) return { errors: { general: ['ID do investidor ausente.'] } }
 
   const parsed = parseInvestorForm(formData)
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors }
 
   const { error } = await updateInvestor(supabase, user.id, investorId, parsed.data)
-  if (error) return { errors: { general: ['Failed to save investor. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar o investidor. Tente novamente.'] } }
 
   await recalculateMatchesForInvestor(supabase, user.id, investorId, true)
 
@@ -86,7 +86,7 @@ export async function deleteInvestorAction(investorId: string): Promise<{ error?
   if (!user) redirect('/auth/login')
 
   const { error } = await deleteInvestor(supabase, user.id, investorId)
-  if (error) return { error: 'Failed to delete investor. Please try again.' }
+  if (error) return { error: 'Não foi possível excluir o investidor. Tente novamente.' }
 
   revalidatePath('/investors')
   return {}
@@ -110,7 +110,7 @@ export async function seedDemoInvestorsAction(): Promise<{ ok: boolean; message:
   revalidatePath('/investors')
   return {
     ok: saved > 0,
-    message: `${saved} demo investors created.`,
+    message: `${saved} clientes demo criados.`,
   }
 }
 
@@ -126,7 +126,7 @@ export async function recalculateInvestorMatchesAction(investorId: string): Prom
 
   return result.error
     ? { ok: false, message: result.error }
-    : { ok: true, message: `${result.matchedCount} matches recalculated for this investor.` }
+    : { ok: true, message: `${result.matchedCount} matches recalculados para este investidor.` }
 }
 
 export async function recalculateAllMatchesAction(): Promise<{ ok: boolean; message: string }> {
@@ -141,5 +141,5 @@ export async function recalculateAllMatchesAction(): Promise<{ ok: boolean; mess
 
   return result.error
     ? { ok: false, message: result.error }
-    : { ok: true, message: `${result.matchedCount} total matches recalculated.` }
+    : { ok: true, message: `${result.matchedCount} matches totais recalculados.` }
 }

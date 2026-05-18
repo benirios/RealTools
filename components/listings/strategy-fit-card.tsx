@@ -58,7 +58,7 @@ function scoreFromRow(row: StrategyFitRow): DisplayScore {
 
 function ScoreBars({ breakdown }: { breakdown: StrategyFitBreakdown }) {
   const rows = [
-    ['Localizacao', breakdown.location],
+    ['Localização', breakdown.location],
     ['Demografia', breakdown.demographics],
     ['Atividade comercial', breakdown.commercial_activity],
     ['Ajuste a risco', breakdown.risk_adjusted],
@@ -129,18 +129,18 @@ export function StrategyFitCard({
     <section className="space-y-4 rounded-md border border-border bg-card p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Strategy Fit</p>
-          <h2 className="text-lg font-semibold text-foreground">Fit por estrategia</h2>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Aderência estratégica</p>
+          <h2 className="text-lg font-semibold text-foreground">Fit por estratégia</h2>
         </div>
         <div className="grid gap-3 sm:min-w-[360px] sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="space-y-2">
-            <Label>Estrategia</Label>
+            <Label>Estratégia</Label>
             <Select
               value={selectedStrategy}
               onValueChange={(value) => setSelectedStrategy(value as StrategyFitSlug)}
               disabled={isPending}
             >
-              <SelectTrigger aria-label="Estrategia">
+              <SelectTrigger aria-label="Estratégia">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -157,7 +157,7 @@ export function StrategyFitCard({
             onClick={handleRecalculate}
           >
             {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
-            {isPending ? 'Recalculando' : 'Recalcular strategy scores'}
+            {isPending ? 'Recalculando' : 'Recalcular scores de estratégia'}
           </Button>
         </div>
       </div>
@@ -167,7 +167,7 @@ export function StrategyFitCard({
 
       {!locationInsightAvailable ? (
         <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-          Enriqueca a localizacao antes de calcular fit por estrategia.
+          Enriqueça a localização antes de calcular fit por estratégia.
         </div>
       ) : currentScore ? (
         <div className="grid gap-5 rounded-md border border-border bg-background/40 p-4 lg:grid-cols-[auto_1fr]">
@@ -180,16 +180,16 @@ export function StrategyFitCard({
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{STRATEGY_FIT_CONFIG[currentScore.strategy].label}</Badge>
-              <Badge variant="outline">Confianca {currentScore.confidence}</Badge>
+              <Badge variant="outline">Confiança {currentScore.confidence}</Badge>
             </div>
           </div>
 
           <div className="space-y-4">
             <ScoreBars breakdown={currentScore.breakdown} />
             <div className="grid gap-3 md:grid-cols-3">
-              <EvidenceList title="Forcas" items={currentScore.strengths} empty="Sem forcas fortes registradas." />
+              <EvidenceList title="Forças" items={currentScore.strengths} empty="Sem forças fortes registradas." />
               <EvidenceList title="Fraquezas" items={currentScore.weaknesses} empty="Sem fraquezas principais registradas." />
-              <EvidenceList title="Melhor encaixe" items={currentScore.bestFitReasons} empty="Sem razoes de melhor encaixe registradas." />
+              <EvidenceList title="Melhor encaixe" items={currentScore.bestFitReasons} empty="Sem razões de melhor encaixe registradas." />
             </div>
             {currentScore.missingData.length > 0 && (
               <p className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export function StrategyFitCard({
         </div>
       ) : (
         <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-          Nenhum score de estrategia salvo ainda. Recalcule para preencher a analise explicavel.
+          Nenhum score de estratégia salvo ainda. Recalcule para preencher a análise explicável.
         </div>
       )}
     </section>

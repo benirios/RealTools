@@ -76,7 +76,7 @@ export async function enrichScoreAndMatchListing(
 ): Promise<ListingProcessingResult> {
   const listing = await loadListingForProcessing(supabase, userId, listingId)
   if (!listing) {
-    return { listingId, enriched: false, scored: false, matched: false, aiSummarized: false, skipped: false, error: 'Listing not found.' }
+    return { listingId, enriched: false, scored: false, matched: false, aiSummarized: false, skipped: false, error: 'Imóvel não encontrado.' }
   }
 
   if (!options.force && listing.enrichment_status === 'processing') {
@@ -98,7 +98,7 @@ export async function enrichScoreAndMatchListing(
       enrichment_last_processed_at: new Date().toISOString(),
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to process listing.'
+    const message = error instanceof Error ? error.message : 'Não foi possível processar o imóvel.'
     await updateListingProcessing(supabase, userId, listingId, {
       enrichment_status: 'failed',
       enrichment_error: message,
@@ -126,7 +126,7 @@ export async function enrichScoreAndMatchListing(
     }
     scored = true
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to calculate listing scores.'
+    const message = error instanceof Error ? error.message : 'Não foi possível calcular os scores do imóvel.'
     await updateListingProcessing(supabase, userId, listingId, {
       matching_error: message,
     })

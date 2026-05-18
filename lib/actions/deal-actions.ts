@@ -38,7 +38,7 @@ export async function createDealAction(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('deals') as any).insert(insertData)
 
-  if (error) return { errors: { general: ['Failed to save deal. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar o negócio. Tente novamente.'] } }
 
   revalidatePath('/dashboard')
   return {}
@@ -53,7 +53,7 @@ export async function updateDealAction(
   if (!user) redirect('/auth/login')
 
   const dealId = formData.get('dealId') as string
-  if (!dealId) return { errors: { general: ['Missing deal ID.'] } }
+  if (!dealId) return { errors: { general: ['ID do negócio ausente.'] } }
 
   const parsed = DealSchema.safeParse({
     title:       formData.get('title'),
@@ -78,7 +78,7 @@ export async function updateDealAction(
     .eq('id', dealId)
     .eq('user_id', user.id)
 
-  if (error) return { errors: { general: ['Failed to save deal. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar o negócio. Tente novamente.'] } }
 
   revalidatePath('/dashboard')
   revalidatePath(`/deals/${dealId}`)
@@ -108,7 +108,7 @@ export async function deleteDealAction(dealId: string): Promise<{ error?: string
     .eq('id', dealId)
     .eq('user_id', user.id)
 
-  if (error) return { error: 'Failed to delete. Please try again.' }
+  if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
 
   revalidatePath('/dashboard')
   return {}

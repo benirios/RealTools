@@ -4,8 +4,8 @@ export const ListingSourceSchema = z.enum(['olx'])
 
 export const ListingDraftSchema = z.object({
   source:         ListingSourceSchema,
-  sourceUrl:      z.string().url('Listing URL must be valid'),
-  title:          z.string().min(2, 'Listing title is required'),
+  sourceUrl:      z.string().url('A URL do imóvel deve ser válida'),
+  title:          z.string().min(2, 'O título do imóvel é obrigatório'),
   description:    z.string().optional(),
   priceText:      z.string().optional(),
   priceAmount:    z.coerce.number().nonnegative().optional(),
@@ -32,7 +32,7 @@ export const ListingImportTargetSchema = z.object({
   country:    z.string().default('BR'),
   state:      z.string().min(2, 'State is required'),
   city:       z.string().min(2, 'City is required'),
-  searchTerm: z.string().min(2, 'Search term is required'),
+  searchTerm: z.string().min(2, 'O termo de busca é obrigatório'),
   isActive:   z.boolean().default(true),
 })
 

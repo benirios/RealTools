@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { revalidateTag } from 'next/cache'
 import { getListingLocationInsight } from '@/lib/location-intelligence/insights'
 import { calculateStrategyFitScore, STRATEGY_FIT_SLUGS, type StrategyFitScoreResult, type StrategyFitSlug } from './strategy-fit'
-import { upsertStrategyFitScore } from './data'
+import { upsertStrategyFitScore } from './strategy-fit-data'
 import type { Database } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']

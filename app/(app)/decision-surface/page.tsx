@@ -229,6 +229,7 @@ export default async function DecisionSurfacePage() {
       location: [listing.neighborhood, listing.city, listing.state].filter(Boolean).join(', ') || listing.location_text,
       priceText: listing.price_text,
       priceAmount: numberOrNull(listing.price_amount),
+      images: listing.images ?? [],
       propertyType: listing.property_type ?? listing.commercial_type,
       commercialType: listing.commercial_type,
       confidence: numberOrNull(listing.confidence),

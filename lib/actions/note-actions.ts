@@ -13,12 +13,12 @@ type NoteInsert = Database['public']['Tables']['notes']['Insert']
 type NoteUpdate = Database['public']['Tables']['notes']['Update']
 
 const NoteSchema = z.object({
-  content: z.string().min(1, 'Note content is required'),
+  content: z.string().min(1, 'O conteúdo da nota é obrigatório'),
   deal_id: z.string().uuid(),
 })
 
 const NoteUpdateSchema = z.object({
-  content: z.string().min(1, 'Note content is required'),
+  content: z.string().min(1, 'O conteúdo da nota é obrigatório'),
 })
 
 export type NoteState = {
@@ -55,7 +55,7 @@ export async function createNoteAction(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('notes') as any).insert(insertData)
 
-  if (error) return { errors: { general: ['Failed to save note. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar a nota. Tente novamente.'] } }
 
   try {
     const serviceClient = createSupabaseServiceClient()
@@ -84,7 +84,7 @@ export async function updateNoteAction(
 
   const noteId = formData.get('note_id') as string
   const dealId = formData.get('deal_id') as string
-  if (!noteId || !dealId) return { errors: { general: ['Missing note ID.'] } }
+  if (!noteId || !dealId) return { errors: { general: ['ID da nota ausente.'] } }
 
   const parsed = NoteUpdateSchema.safeParse({
     content: formData.get('content'),
@@ -105,7 +105,7 @@ export async function updateNoteAction(
     .eq('id', noteId)
     .eq('user_id', user.id)
 
-  if (error) return { errors: { general: ['Failed to save note. Please try again.'] } }
+  if (error) return { errors: { general: ['Não foi possível salvar a nota. Tente novamente.'] } }
 
   revalidatePath(`/deals/${dealId}`)
   return {}
@@ -125,7 +125,7 @@ export async function deleteNoteAction(
     .eq('id', noteId)
     .eq('user_id', user.id)
 
-  if (error) return { error: 'Failed to delete. Please try again.' }
+  if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
 
   revalidatePath(`/deals/${dealId}`)
   return {}

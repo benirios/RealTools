@@ -10,9 +10,7 @@ import {
   CircleAlert,
   ExternalLink,
   Filter,
-  Layers3,
   Loader2,
-  MapPin,
   RefreshCw,
   Search,
   Sparkles,
@@ -44,6 +42,7 @@ export type DecisionOpportunity = {
   location: string | null
   priceText: string | null
   priceAmount: number | null
+  images: string[]
   propertyType: string | null
   commercialType: string | null
   confidence: number | null
@@ -129,6 +128,14 @@ function scoreLabel(score: number | null | undefined) {
   return `${Math.round(score)}`
 }
 
+function primaryImage(opportunity: DecisionOpportunity) {
+  return opportunity.images.find((image) => image.trim().length > 0) ?? null
+}
+
+function imageSrc(src: string) {
+  return src.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(src)}` : src
+}
+
 function statusVariant(status: string | null | undefined) {
   if (status === 'failed') return 'destructive' as const
   if (status === 'completed') return 'default' as const
@@ -140,6 +147,22 @@ function confidenceVariant(confidence: string | null | undefined) {
   if (confidence === 'high') return 'default' as const
   if (confidence === 'medium') return 'outline' as const
   return 'secondary' as const
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  processing: 'Processando',
+  completed: 'Concluído',
+  failed: 'Falhou',
+  strong: 'Forte',
+  medium: 'Médio',
+  weak: 'Fraco',
+}
+
+const CONFIDENCE_LABELS: Record<string, string> = {
+  low: 'baixa',
+  medium: 'média',
+  high: 'alta',
 }
 
 function formatDate(value: string | null | undefined) {
@@ -166,15 +189,6 @@ function formatMoney(opportunity: DecisionOpportunity) {
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '-'
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
-}
-
-function validCoordinate(opportunity: DecisionOpportunity) {
-  return (
-    typeof opportunity.lat === 'number'
-    && typeof opportunity.lng === 'number'
-    && Number.isFinite(opportunity.lat)
-    && Number.isFinite(opportunity.lng)
-  )
 }
 
 function uniqueSorted(values: Array<string | null | undefined>) {
@@ -207,10 +221,10 @@ function scoreBreakdown(opportunity: DecisionOpportunity) {
   if (!score) return []
 
   return [
-    ['Localizacao', score.location],
+    ['Localização', score.location],
     ['Demografia', score.demographics],
     ['Fluxo', score.footTraffic],
-    ['Concorrencia', score.competition],
+    ['Concorrência', score.competition],
     ['Fit investidor', score.investorFit],
     ['Risco', score.risk],
   ].flatMap(([label, value]) => (
@@ -222,7 +236,7 @@ function summarySnippet(opportunity: DecisionOpportunity) {
   return opportunity.aiSummary?.headline
     ?? opportunity.aiSummary?.investor_angle
     ?? jsonStrings(opportunity.score?.signals, 1)[0]
-    ?? 'Sem resumo AI ainda. Use o painel para regenerar quando houver score e contexto local.'
+    ?? 'Sem resumo IA ainda. Use o painel para regenerar quando houver score e contexto local.'
 }
 
 function filterOpportunities(opportunities: DecisionOpportunity[], filters: FilterState) {
@@ -257,105 +271,6 @@ function filterOpportunities(opportunities: DecisionOpportunity[], filters: Filt
     .sort((a, b) => opportunityScore(b) - opportunityScore(a))
 }
 
-function getBounds(opportunities: DecisionOpportunity[]) {
-  const mapped = opportunities.filter(validCoordinate)
-  if (mapped.length === 0) return null
-
-  const lats = mapped.map((opportunity) => opportunity.lat as number)
-  const lngs = mapped.map((opportunity) => opportunity.lng as number)
-
-  return {
-    minLat: Math.min(...lats),
-    maxLat: Math.max(...lats),
-    minLng: Math.min(...lngs),
-    maxLng: Math.max(...lngs),
-  }
-}
-
-const MAP_WIDTH = 1000
-const MAP_HEIGHT = 500
-const TILE_SIZE = 256
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max)
-}
-
-function latLngToWorld(lat: number, lng: number, zoom: number) {
-  const scale = TILE_SIZE * 2 ** zoom
-  const sinLat = Math.sin(clamp(lat, -85.05112878, 85.05112878) * Math.PI / 180)
-
-  return {
-    x: ((lng + 180) / 360) * scale,
-    y: (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale,
-  }
-}
-
-function chooseMapFrame(opportunities: DecisionOpportunity[]) {
-  const mapped = opportunities.filter(validCoordinate)
-  const bounds = getBounds(mapped)
-  if (!bounds) return null
-
-  const centerLat = (bounds.minLat + bounds.maxLat) / 2
-  const centerLng = (bounds.minLng + bounds.maxLng) / 2
-
-  let zoom = 15
-  for (let nextZoom = 17; nextZoom >= 3; nextZoom -= 1) {
-    const northWest = latLngToWorld(bounds.maxLat, bounds.minLng, nextZoom)
-    const southEast = latLngToWorld(bounds.minLat, bounds.maxLng, nextZoom)
-    const width = Math.abs(southEast.x - northWest.x)
-    const height = Math.abs(southEast.y - northWest.y)
-
-    if (mapped.length === 1 || (width <= MAP_WIDTH * 0.7 && height <= MAP_HEIGHT * 0.7)) {
-      zoom = nextZoom
-      break
-    }
-  }
-
-  return {
-    zoom,
-    center: latLngToWorld(centerLat, centerLng, zoom),
-  }
-}
-
-function mapPointStyle(opportunity: DecisionOpportunity, frame: NonNullable<ReturnType<typeof chooseMapFrame>>) {
-  const point = latLngToWorld(opportunity.lat as number, opportunity.lng as number, frame.zoom)
-  const left = 50 + ((point.x - frame.center.x) / MAP_WIDTH) * 100
-  const top = 50 + ((point.y - frame.center.y) / MAP_HEIGHT) * 100
-
-  return {
-    left: `${clamp(left, 3, 97)}%`,
-    top: `${clamp(top, 3, 97)}%`,
-  }
-}
-
-function mapTiles(frame: NonNullable<ReturnType<typeof chooseMapFrame>>) {
-  const minX = frame.center.x - MAP_WIDTH / 2
-  const maxX = frame.center.x + MAP_WIDTH / 2
-  const minY = frame.center.y - MAP_HEIGHT / 2
-  const maxY = frame.center.y + MAP_HEIGHT / 2
-  const tileMinX = Math.floor(minX / TILE_SIZE)
-  const tileMaxX = Math.floor(maxX / TILE_SIZE)
-  const tileMinY = Math.floor(minY / TILE_SIZE)
-  const tileMaxY = Math.floor(maxY / TILE_SIZE)
-  const maxTile = 2 ** frame.zoom
-  const tiles = []
-
-  for (let x = tileMinX; x <= tileMaxX; x += 1) {
-    for (let y = tileMinY; y <= tileMaxY; y += 1) {
-      if (y < 0 || y >= maxTile) continue
-      const wrappedX = ((x % maxTile) + maxTile) % maxTile
-      tiles.push({
-        key: `${frame.zoom}-${wrappedX}-${y}`,
-        src: `https://tile.openstreetmap.org/${frame.zoom}/${wrappedX}/${y}.png`,
-        left: `${((x * TILE_SIZE - minX) / MAP_WIDTH) * 100}%`,
-        top: `${((y * TILE_SIZE - minY) / MAP_HEIGHT) * 100}%`,
-      })
-    }
-  }
-
-  return tiles
-}
-
 function SelectFilter({
   label,
   value,
@@ -380,118 +295,54 @@ function SelectFilter({
   )
 }
 
-function OpportunityMap({
-  opportunities,
-  selectedOpportunity,
-  onSelect,
-}: {
-  opportunities: DecisionOpportunity[]
-  selectedOpportunity: DecisionOpportunity | null
-  onSelect: (opportunity: DecisionOpportunity) => void
-}) {
-  const [failedTileCount, setFailedTileCount] = useState(0)
-  const mapped = opportunities.filter(validCoordinate)
-  const frame = chooseMapFrame(mapped)
-  const tiles = frame ? mapTiles(frame) : []
-  const tileFailureThreshold = Math.min(4, Math.max(1, tiles.length))
-  const showOfflineBaseMap = !frame || failedTileCount >= tileFailureThreshold
-
-  useEffect(() => {
-    setFailedTileCount(0)
-  }, [frame?.zoom, frame?.center.x, frame?.center.y])
+function SelectedOpportunityPhoto({ opportunity }: { opportunity: DecisionOpportunity | null }) {
+  const image = opportunity ? primaryImage(opportunity) : null
 
   return (
     <section className="min-h-[560px] rounded-md border border-border bg-card">
       <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mapa de oportunidades</p>
-          <h2 className="text-lg font-semibold text-foreground">{mapped.length} pontos com coordenadas</h2>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Foto do imóvel selecionado</p>
+          <h2 className="line-clamp-1 text-lg font-semibold text-foreground">
+            {opportunity?.title ?? 'Nenhum imóvel selecionado'}
+          </h2>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span className="size-2.5 rounded-full bg-emerald-500" />80+</span>
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span className="size-2.5 rounded-full bg-amber-500" />60-79</span>
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span className="size-2.5 rounded-full bg-zinc-500" />&lt;60</span>
-        </div>
+        {opportunity && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Badge variant="outline">{scoreLabel(opportunity.score?.total)}</Badge>
+            <Badge variant={opportunity.investorMatches.length > 0 ? 'default' : 'outline'}>
+              {opportunity.investorMatches.length} matches
+            </Badge>
+          </div>
+        )}
       </div>
 
       <div className="relative h-[500px] overflow-hidden bg-muted">
-        {showOfflineBaseMap && (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:52px_52px]">
-            <div className="absolute left-[-10%] top-[18%] h-8 w-[120%] -rotate-6 bg-background/70 shadow-[0_0_0_1px_var(--border)]" />
-            <div className="absolute left-[-12%] top-[58%] h-10 w-[125%] rotate-3 bg-background/80 shadow-[0_0_0_1px_var(--border)]" />
-            <div className="absolute left-[24%] top-[-10%] h-[120%] w-8 rotate-12 bg-background/70 shadow-[0_0_0_1px_var(--border)]" />
-            <div className="absolute left-[68%] top-[-8%] h-[118%] w-7 -rotate-3 bg-background/75 shadow-[0_0_0_1px_var(--border)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_32%,rgba(16,185,129,0.16),transparent_24%),radial-gradient(circle_at_72%_64%,rgba(245,158,11,0.14),transparent_28%)]" />
-          </div>
-        )}
-        {!showOfflineBaseMap && tiles.map((tile) => (
+        {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            key={tile.key}
-            src={tile.src}
-            alt=""
-            aria-hidden="true"
-            referrerPolicy="no-referrer"
-            className="absolute max-w-none select-none"
-            onError={() => setFailedTileCount((count) => count + 1)}
-            style={{
-              left: tile.left,
-              top: tile.top,
-              width: `${(TILE_SIZE / MAP_WIDTH) * 100}%`,
-              height: `${(TILE_SIZE / MAP_HEIGHT) * 100}%`,
-            }}
+            src={imageSrc(image)}
+            alt={opportunity?.title ?? ''}
+            className="size-full object-cover"
           />
-        ))}
-        <div className="absolute inset-0 bg-background/10" />
-        <div className="absolute left-4 top-4 rounded-md border border-border bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
-          {showOfflineBaseMap ? 'Mapa offline por coordenadas.' : 'OpenStreetMap.'} Imóveis sem coordenadas ficam apenas no feed.
-        </div>
-        {showOfflineBaseMap && frame && tiles.length > 0 && (
-          <div className="absolute bottom-4 left-4 max-w-xs rounded-md border border-border bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
-            Tiles externos indisponíveis neste ambiente. Pins, seleção e ranking continuam sincronizados.
-          </div>
-        )}
-
-        {!frame || mapped.length === 0 ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <MapPin className="mb-3 size-9 text-muted-foreground" />
-            <h3 className="text-base font-semibold text-foreground">Nenhum ponto mapeável</h3>
+        ) : (
+          <div className="flex size-full flex-col items-center justify-center p-6 text-center">
+            <Building2 className="mb-3 size-10 text-muted-foreground" />
+            <h3 className="text-base font-semibold text-foreground">
+              {opportunity ? 'Imóvel sem foto' : 'Nenhum imóvel selecionado'}
+            </h3>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Enriqueca os imóveis ou importe anúncios com coordenadas para popular o mapa.
+              Selecione um card no ranking para ver a foto principal do imóvel.
             </p>
           </div>
-        ) : (
-          mapped.map((opportunity) => {
-            const score = opportunityScore(opportunity)
-            const tone = scoreTone(score)
-            const selected = selectedOpportunity?.id === opportunity.id
-
-            return (
-              <button
-                key={opportunity.id}
-                type="button"
-                aria-label={`Selecionar ${opportunity.title}`}
-                title={`${opportunity.title} · ${scoreLabel(opportunity.score?.total)} · ${opportunity.investorMatches.length} matches`}
-                onClick={() => onSelect(opportunity)}
-                className={cn(
-                  'group absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-semibold shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20',
-                  tone === 'high' && 'border-emerald-300 bg-emerald-500 text-white',
-                  tone === 'medium' && 'border-amber-300 bg-amber-500 text-white',
-                  tone === 'low' && 'border-zinc-300 bg-zinc-600 text-white',
-                  selected && 'z-20 scale-110 ring-4 ring-foreground/15'
-                )}
-                style={mapPointStyle(opportunity, frame)}
-              >
-                <MapPin className="size-3.5" />
-                <span>{scoreLabel(opportunity.score?.total)}</span>
-                <span className="hidden rounded-full bg-white/20 px-1.5 sm:inline">{opportunity.investorMatches.length}</span>
-                <span className="pointer-events-none absolute left-1/2 top-full mt-2 hidden w-48 -translate-x-1/2 rounded-md border border-border bg-popover p-2 text-left text-xs font-normal text-popover-foreground shadow-sm group-hover:block group-focus-visible:block">
-                  <span className="block truncate font-medium">{opportunity.title}</span>
-                  <span className="mt-1 block text-muted-foreground">{opportunity.investorMatches.length} investor matches</span>
-                </span>
-              </button>
-            )
-          })
+        )}
+        {opportunity && (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-16 text-white">
+            <p className="line-clamp-1 text-sm font-semibold">{opportunity.title}</p>
+            <p className="mt-1 line-clamp-1 text-xs text-white/80">
+              {opportunity.address ?? opportunity.location ?? 'Sem endereço'}
+            </p>
+          </div>
         )}
       </div>
     </section>
@@ -512,7 +363,7 @@ function OpportunityFeed({
   return (
     <section className="min-h-[560px] rounded-md border border-border bg-card">
       <div className="border-b border-border p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ranked feed</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ranking</p>
         <h2 className="text-lg font-semibold text-foreground">{opportunities.length} oportunidades</h2>
       </div>
 
@@ -550,7 +401,7 @@ function OpportunityFeed({
                       <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{opportunity.title}</h3>
                     </div>
                     <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                      {opportunity.address ?? opportunity.location ?? 'Sem endereco'}
+                      {opportunity.address ?? opportunity.location ?? 'Sem endereço'}
                     </p>
                   </div>
                   <div className={cn(
@@ -571,7 +422,7 @@ function OpportunityFeed({
                   </Badge>
                   {opportunity.aiSummary?.confidence && (
                     <Badge variant={confidenceVariant(opportunity.aiSummary.confidence)}>
-                      confianca {opportunity.aiSummary.confidence}
+                      confiança {CONFIDENCE_LABELS[opportunity.aiSummary.confidence] ?? opportunity.aiSummary.confidence}
                     </Badge>
                   )}
                   {opportunity.confidence !== null && (
@@ -658,7 +509,7 @@ function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
         }}
       >
         {summaryPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Sparkles className="mr-2 size-4" />}
-        Regenerar AI
+        Regenerar IA
       </Button>
       <Button asChild size="sm" variant="ghost">
         <Link href={`/imoveis/${opportunity.id}`}>
@@ -676,7 +527,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
       <section className="rounded-md border border-border bg-card p-8 text-center">
         <Target className="mx-auto mb-3 size-8 text-muted-foreground" />
         <h2 className="text-base font-semibold text-foreground">Selecione uma oportunidade</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Clique em um pin ou card para abrir a inteligencia do ponto.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Clique em um pin ou card para abrir a inteligência do ponto.</p>
       </section>
     )
   }
@@ -693,16 +544,16 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={statusVariant(opportunity.enrichmentStatus)}>Enriq. {opportunity.enrichmentStatus}</Badge>
-              <Badge variant={statusVariant(opportunity.matchingStatus)}>Match {opportunity.matchingStatus}</Badge>
+              <Badge variant={statusVariant(opportunity.enrichmentStatus)}>Enriq. {STATUS_LABELS[opportunity.enrichmentStatus] ?? opportunity.enrichmentStatus}</Badge>
+              <Badge variant={statusVariant(opportunity.matchingStatus)}>Match {STATUS_LABELS[opportunity.matchingStatus] ?? opportunity.matchingStatus}</Badge>
               {opportunity.aiSummary?.confidence && (
                 <Badge variant={confidenceVariant(opportunity.aiSummary.confidence)}>
-                  AI {opportunity.aiSummary.confidence}
+                  IA {CONFIDENCE_LABELS[opportunity.aiSummary.confidence] ?? opportunity.aiSummary.confidence}
                 </Badge>
               )}
             </div>
             <h2 className="mt-3 text-2xl font-semibold leading-tight text-foreground">{opportunity.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{opportunity.address ?? opportunity.location ?? 'Sem endereco'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{opportunity.address ?? opportunity.location ?? 'Sem endereço'}</p>
           </div>
           <ActionButtons opportunity={opportunity} />
         </div>
@@ -727,15 +578,15 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Dados do ponto</p>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Tipo</dt><dd className="text-right text-foreground">{opportunity.propertyType ?? '-'}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Preco</dt><dd className="text-right text-foreground">{formatMoney(opportunity) ?? '-'}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Area</dt><dd className="text-right text-foreground">-</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Preço</dt><dd className="text-right text-foreground">{formatMoney(opportunity) ?? '-'}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Área</dt><dd className="text-right text-foreground">-</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Processado</dt><dd className="text-right text-foreground">{formatDate(opportunity.lastProcessedAt)}</dd></div>
             </dl>
           </div>
 
           {breakdown.length > 0 && (
             <div className="rounded-md border border-border bg-background p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Breakdown do score</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Detalhamento do score</p>
               <div className="mt-3 space-y-2">
                 {breakdown.map((item) => (
                   <div key={item.label}>
@@ -756,7 +607,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-background p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">AI deal summary</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Resumo IA do negócio</p>
               <span className="text-xs text-muted-foreground">{formatDate(opportunity.aiSummaryGeneratedAt)}</span>
             </div>
             {opportunity.aiSummary ? (
@@ -771,7 +622,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Forcas</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Forças</p>
                     <ul className="mt-2 space-y-1 text-sm text-foreground">
                       {opportunity.aiSummary.strengths.map((item, itemIndex) => (
                         <li key={`${opportunity.id}-strength-${itemIndex}-${item}`}>- {item}</li>
@@ -788,24 +639,24 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Angulo investidor</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ângulo do investidor</p>
                   <p className="mt-2 text-sm leading-relaxed text-foreground">{opportunity.aiSummary.investor_angle}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Acao recomendada</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ação recomendada</p>
                   <p className="mt-2 text-sm leading-relaxed text-foreground">{opportunity.aiSummary.recommended_action}</p>
                 </div>
               </div>
             ) : (
               <div className="mt-3 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Status: {opportunity.aiSummaryStatus}. Gere o resumo quando houver enriquecimento e score.
+                Status: {STATUS_LABELS[opportunity.aiSummaryStatus] ?? opportunity.aiSummaryStatus}. Gere o resumo quando houver enriquecimento e score.
               </div>
             )}
           </div>
 
           {risks.length > 0 && (
             <div className="rounded-md border border-border bg-background p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risco / confianca</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risco / confiança</p>
               <div className="mt-3 space-y-2">
                 {risks.map((risk, riskIndex) => (
                   <div key={`${opportunity.id}-risk-${riskIndex}-${risk}`} className="flex gap-2 text-sm text-foreground">
@@ -820,7 +671,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
 
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Investor matches</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Matches de investidores</p>
             {opportunity.investorMatches.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">Nenhum match persistido ainda.</p>
             ) : (
@@ -846,17 +697,17 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
           </div>
 
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Inteligencia local</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Inteligência local</p>
             {opportunity.localIntelligence ? (
               <div className="mt-3 space-y-3 text-sm">
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
-                  <p className="text-foreground">{opportunity.localIntelligence.consumerProfile ?? 'Perfil de consumo indisponivel.'}</p>
+                  <p className="text-foreground">{opportunity.localIntelligence.consumerProfile ?? 'Perfil de consumo indisponível.'}</p>
                 </div>
                 <dl className="grid grid-cols-2 gap-3">
-                  <div><dt className="text-xs text-muted-foreground">Renda media</dt><dd className="font-medium text-foreground">{formatNumber(opportunity.localIntelligence.avgIncome)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Renda média</dt><dd className="font-medium text-foreground">{formatNumber(opportunity.localIntelligence.avgIncome)}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Densidade</dt><dd className="font-medium text-foreground">{formatNumber(opportunity.localIntelligence.populationDensity)}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Confianca</dt><dd className="font-medium text-foreground">{formatNumber(opportunity.localIntelligence.confidenceScore)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Confiança</dt><dd className="font-medium text-foreground">{formatNumber(opportunity.localIntelligence.confidenceScore)}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Atualizado</dt><dd className="font-medium text-foreground">{formatDate(opportunity.localIntelligence.updatedAt)}</dd></div>
                 </dl>
               </div>
@@ -866,17 +717,17 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
           </div>
 
           <div className="rounded-md border border-border bg-background p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nearby businesses</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Negócios próximos</p>
             {opportunity.nearbyBusinesses.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                Indisponivel ate uma fonte confiavel retornar negocios reais.
+                Indisponível até uma fonte confiável retornar negócios reais.
               </p>
             ) : (
               <div className="mt-3 space-y-2">
                 {opportunity.nearbyBusinesses.slice(0, 5).map((business, index) => (
                   <div key={`${business.name}-${index}`} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{business.name ?? 'Negocio local'}</p>
+                      <p className="truncate font-medium text-foreground">{business.name ?? 'Negócio local'}</p>
                       <p className="text-xs text-muted-foreground">{business.category ?? '-'}</p>
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground">
@@ -950,7 +801,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
     cardRefs.current.get(selectedOpportunity.id)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedOpportunity])
 
-  const mappedCount = opportunities.filter(validCoordinate).length
+  const photoCount = opportunities.filter((opportunity) => Boolean(primaryImage(opportunity))).length
   const highCount = opportunities.filter((opportunity) => opportunityScore(opportunity) >= 80).length
   const matchCount = opportunities.filter((opportunity) => opportunity.investorMatches.length > 0).length
 
@@ -958,10 +809,10 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Decision Surface V1</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Superfície de decisão V1</p>
           <h1 className="text-3xl font-semibold leading-tight text-foreground">Terminal de oportunidades comerciais</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Mapa, ranking, score universal, resumo AI, matches de investidores e inteligencia local em uma tela operacional.
+            Foto do imóvel selecionado, ranking, score universal, resumo IA, matches de investidores e inteligência local em uma tela operacional.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -989,7 +840,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
       <section className="rounded-md border border-border bg-card p-4">
         <div className="grid gap-3 xl:grid-cols-[1.3fr_0.5fr_0.75fr_0.75fr_0.75fr_0.9fr]">
           <div className="space-y-2">
-            <Label htmlFor="decision-search" className="text-xs">Buscar titulo/endereco</Label>
+            <Label htmlFor="decision-search" className="text-xs">Buscar título/endereço</Label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -1002,7 +853,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="decision-min-score" className="text-xs">Score minimo</Label>
+            <Label htmlFor="decision-min-score" className="text-xs">Score mínimo</Label>
             <Input
               id="decision-min-score"
               type="number"
@@ -1030,7 +881,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
             <SelectItem value={ALL}>Todos</SelectItem>
             <SelectItem value="has">Com matches</SelectItem>
             <SelectItem value="none">Sem matches</SelectItem>
-            <SelectItem value="completed">Concluido</SelectItem>
+            <SelectItem value="completed">Concluído</SelectItem>
             <SelectItem value="pending">Pendente</SelectItem>
             <SelectItem value="processing">Processando</SelectItem>
             <SelectItem value="failed">Falhou</SelectItem>
@@ -1041,7 +892,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
             onChange={(enrichmentStatus) => setFilters((current) => ({ ...current, enrichmentStatus }))}
           >
             <SelectItem value={ALL}>Todos</SelectItem>
-            {enrichmentStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+            {enrichmentStatuses.map((status) => <SelectItem key={status} value={status}>{STATUS_LABELS[status] ?? status}</SelectItem>)}
           </SelectFilter>
           <SelectFilter
             label="Fit/tag"
@@ -1059,7 +910,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
           <Building2 className="mb-4 size-10 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Nenhum ponto comercial ainda</h2>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            Importe pesquisas ou crie enriquecimentos para alimentar o Decision Surface.
+            Importe pesquisas ou crie enriquecimentos para alimentar a superfície de decisão.
           </p>
           <Button asChild className="mt-5">
             <Link href="/listings/import">
@@ -1071,11 +922,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
       ) : (
         <>
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-            <OpportunityMap
-              opportunities={filteredOpportunities}
-              selectedOpportunity={selectedOpportunity}
-              onSelect={setSelectedOpportunity}
-            />
+            <SelectedOpportunityPhoto opportunity={selectedOpportunity} />
             <OpportunityFeed
               opportunities={filteredOpportunities}
               selectedOpportunity={selectedOpportunity}
@@ -1085,12 +932,11 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Layers3 className="size-4" />
             <span>{filteredOpportunities.length} no filtro</span>
             <span>·</span>
-            <span>{mappedCount} com coordenadas</span>
+            <span>{photoCount} com foto</span>
             <span>·</span>
-            <span>{opportunities.length - mappedCount} apenas no feed</span>
+            <span>{opportunities.length - photoCount} sem foto</span>
           </div>
 
           <IntelligencePanel opportunity={selectedOpportunity} />

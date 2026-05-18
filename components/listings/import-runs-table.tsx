@@ -22,6 +22,14 @@ function statusVariant(status: string) {
   return 'default' as const
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  running: 'Executando',
+  completed: 'Concluído',
+  partial: 'Parcial',
+  failed: 'Falhou',
+}
+
 function formatDate(value: string | null) {
   if (!value) return '-'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -59,7 +67,7 @@ export function ImportRunsTable({ runs }: { runs: ImportRun[] }) {
             className="grid gap-3 px-4 py-4 text-sm md:grid-cols-[0.7fr_0.8fr_repeat(4,0.45fr)_1fr_1.1fr_auto] md:items-center"
           >
             <span className="font-medium text-foreground">{run.source}</span>
-            <Badge variant={statusVariant(run.status)}>{run.status}</Badge>
+            <Badge variant={statusVariant(run.status)}>{STATUS_LABELS[run.status] ?? run.status}</Badge>
             <span className="text-muted-foreground">{run.created_count}</span>
             <span className="text-muted-foreground">{run.updated_count}</span>
             <span className="text-muted-foreground">{run.skipped_count}</span>

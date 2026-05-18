@@ -16,7 +16,7 @@ export function TagInput({
   name,
   defaultValue = [],
   disabled = false,
-  placeholder = 'Type a tag and press Enter',
+  placeholder = 'Digite uma etiqueta e pressione Enter',
 }: Props) {
   const [tags, setTags] = useState<string[]>(defaultValue)
   const [inputValue, setInputValue] = useState('')

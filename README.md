@@ -1,44 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# RealTools
 
-First, run the development server:
+RealTools is an AI-powered real estate workflow platform built to streamline property analysis, client matching, and acquisition decision-making for agents, investors, and real estate teams.
+
+## Overview
+
+The platform centralizes the entire workflow around clients and properties, allowing users to:
+
+- Manage clients and investment profiles
+- Analyze properties automatically
+- Generate AI-powered summaries
+- Score opportunities based on strategy fit
+- Enrich location data dynamically
+- Organize saved properties inside pipelines
+- Reduce operational friction during acquisitions
+
+The system is designed around a condensed workflow philosophy: users should receive actionable insights immediately instead of manually processing scattered information.
+
+---
+
+## Core Features
+
+### Client Management
+Store and manage client preferences, investment strategies, and acquisition criteria.
+
+### Property Analysis
+Automatically evaluate properties using predefined scoring systems and AI-generated insights.
+
+### Strategy Matching
+Match properties against client investment profiles and rank compatibility.
+
+### Location Enrichment
+Generate contextual insights based on property location and surrounding data.
+
+### Pipeline System
+Save and organize properties throughout different acquisition stages.
+
+### AI Summaries
+Condense complex property data into concise decision-oriented summaries.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js / React |
+| Backend | Node.js |
+| Database | PostgreSQL / Supabase |
+| Hosting | Railway |
+| AI Services | OpenAI API |
+| Automation | Make (Integromat) |
+
+---
+
+## Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+realtools/
+├── app/
+├── components/
+├── hooks/
+├── lib/
+├── services/
+├── utils/
+├── public/
+├── styles/
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Product Philosophy
 
-To run a Playwright localhost agent check:
+RealTools is designed to eliminate unnecessary cognitive load from real estate workflows.
 
-```bash
-npm run agent:localhost
-# or pass a specific URL
-npm run agent:localhost -- http://127.0.0.1:3000
-```
+Instead of forcing users to manually calculate strategy fit, compare spreadsheets, or navigate fragmented interfaces, the platform prioritizes immediate clarity and decision readiness.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The objective is to present fully processed, high-signal property intelligence the moment a user opens an opportunity.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Roadmap
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- AI-powered deal analysis
+- CRM integrations
+- WhatsApp integration
+- Automated acquisition recommendations
+- Market intelligence tools
+- Multi-user collaboration
+- Mobile application
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contributions are welcome.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For major changes, please open an issue first to discuss the proposed changes before submitting a pull request.

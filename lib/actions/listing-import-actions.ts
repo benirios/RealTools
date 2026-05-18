@@ -27,7 +27,7 @@ export type OlxSearchImportState = {
 }
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Unknown import error'
+  return error instanceof Error ? error.message : 'Erro desconhecido na importação'
 }
 
 function getSavedUrls(metadata: Json | null): string[] {
@@ -54,11 +54,11 @@ export async function runOlxSearchImportAction(
     : 25
 
   if (locationQuery.length < 2) {
-    return { errors: { locationQuery: ['Enter an address, city, or region.'] } }
+    return { errors: { locationQuery: ['Informe um endereço, cidade ou região.'] } }
   }
 
   if (searchTerm.length < 2) {
-    return { errors: { searchTerm: ['Enter a search term.'] } }
+    return { errors: { searchTerm: ['Informe um termo de busca.'] } }
   }
 
   const { data: run, error: runError } = await startImportRun(supabase, user.id, {
@@ -73,7 +73,7 @@ export async function runOlxSearchImportAction(
   })
 
   if (runError || !run) {
-    return { errors: { general: ['Failed to start import run.'] } }
+    return { errors: { general: ['Não foi possível iniciar a importação.'] } }
   }
 
   try {
@@ -94,7 +94,7 @@ export async function runOlxSearchImportAction(
       const { error } = await upsertListing(supabase, user.id, listing)
       if (error) {
         failedCount += 1
-        failures.push(`${listing.sourceUrl}: ${error.message ?? 'upsert failed'}`)
+        failures.push(`${listing.sourceUrl}: ${error.message ?? 'falha ao salvar'}`)
       } else {
         createdCount += 1
         savedUrls.push(listing.sourceUrl)
@@ -161,7 +161,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
     .single() as { data: ListingImportTargetRow | null }
 
   if (!target) {
-    return { ok: false, message: 'Import target not found or inactive.' }
+    return { ok: false, message: 'Alvo de importação não encontrado ou inativo.' }
   }
 
   const { data: run, error: runError } = await startImportRun(supabase, user.id, {
@@ -175,7 +175,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
   })
 
   if (runError || !run) {
-    return { ok: false, message: 'Failed to start import run.' }
+    return { ok: false, message: 'Não foi possível iniciar a importação.' }
   }
 
   try {
@@ -195,7 +195,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
       const { error } = await upsertListing(supabase, user.id, listing)
       if (error) {
         failedCount += 1
-        failures.push(`${listing.sourceUrl}: ${error.message ?? 'upsert failed'}`)
+        failures.push(`${listing.sourceUrl}: ${error.message ?? 'falha ao salvar'}`)
       } else {
         createdCount += 1
         savedUrls.push(listing.sourceUrl)
@@ -256,12 +256,12 @@ export async function reenrichImportRunAction(runId: string): Promise<ImportActi
     .single()
 
   if (!run) {
-    return { ok: false, message: 'Import run not found.' }
+    return { ok: false, message: 'Execução de importação não encontrada.' }
   }
 
   const savedUrls = getSavedUrls(run.metadata)
   if (savedUrls.length === 0) {
-    return { ok: false, message: 'This import run has no saved listings to reprocess.' }
+    return { ok: false, message: 'Esta importação não tem imóveis salvos para reprocessar.' }
   }
 
   const automation = await processImportRunListings(supabase, user.id, runId, savedUrls, { force: true })
@@ -272,7 +272,7 @@ export async function reenrichImportRunAction(runId: string): Promise<ImportActi
 
   return {
     ok: automation.automation.failedCount === 0,
-    message: `Reprocessed ${automation.automation.commercialCount} commercial listings: ${automation.automation.enrichedCount} enriched, ${automation.automation.matchedCount} matched, ${automation.automation.failedCount} failed.`,
+    message: `Reprocessados ${automation.automation.commercialCount} imóveis comerciais: ${automation.automation.enrichedCount} enriquecidos, ${automation.automation.matchedCount} com match, ${automation.automation.failedCount} com falha.`,
   }
 }
 
@@ -308,6 +308,6 @@ export async function seedDefaultImportTargetsAction(): Promise<ImportActionResu
 
   return {
     ok: saved > 0,
-    message: saved > 0 ? `${saved} default targets ready.` : 'No default targets were saved.',
+    message: saved > 0 ? `${saved} alvos padrão prontos.` : 'Nenhum alvo padrão foi salvo.',
   }
 }

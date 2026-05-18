@@ -30,6 +30,19 @@ function confidenceVariant(confidence: string) {
   return 'secondary' as const
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  processing: 'Processando',
+  completed: 'Concluído',
+  failed: 'Falhou',
+}
+
+const CONFIDENCE_LABELS: Record<string, string> = {
+  low: 'baixa',
+  medium: 'média',
+  high: 'alta',
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return '-'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -48,7 +61,7 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
     <div className="space-y-4 rounded-md border border-border bg-card p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">AI Deal Summary</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Resumo IA do negócio</p>
           <h2 className="text-lg font-semibold text-foreground">Resumo comercial do ponto</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {summaryRow?.provider && summaryRow?.model
@@ -57,7 +70,7 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={statusVariant(status)}>{status}</Badge>
+          <Badge variant={statusVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
           <Button
             type="button"
             size="sm"
@@ -72,7 +85,7 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
             }}
           >
             {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
-            Regenerate AI Summary
+            Regenerar resumo IA
           </Button>
         </div>
       </div>
@@ -86,14 +99,14 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
 
       {status === 'failed' && (
         <div className="rounded-md border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
-          {summaryRow?.error_message ?? 'AI summary unavailable.'}
+          {summaryRow?.error_message ?? 'Resumo IA indisponível.'}
         </div>
       )}
 
       {!summary && status !== 'processing' && status !== 'failed' && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="size-4" />
-          AI summary unavailable until the point has enrichment, score, and provider configuration.
+          O resumo IA fica disponível após enriquecimento, score e configuração do provedor.
         </div>
       )}
 
@@ -102,12 +115,12 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-foreground">{summary.headline}</h3>
-              <Badge variant={confidenceVariant(summary.confidence)}>confiança {summary.confidence}</Badge>
+              <Badge variant={confidenceVariant(summary.confidence)}>confiança {CONFIDENCE_LABELS[summary.confidence] ?? summary.confidence}</Badge>
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Best fit</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Melhor encaixe</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {summary.best_fit.map((item) => (
                 <Badge key={item} variant="outline">{item}</Badge>
@@ -117,13 +130,13 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Strengths</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pontos fortes</p>
               <ul className="mt-2 space-y-1 text-sm text-foreground">
                 {summary.strengths.map((item) => <li key={item}>- {item}</li>)}
               </ul>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risks</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Riscos</p>
               <ul className="mt-2 space-y-1 text-sm text-foreground">
                 {summary.risks.map((item) => <li key={item}>- {item}</li>)}
               </ul>
@@ -132,11 +145,11 @@ export function AiDealSummaryCard({ listingId, summaryRow, summary }: Props) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Investor angle</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ângulo do investidor</p>
               <p className="mt-2 text-sm leading-relaxed text-foreground">{summary.investor_angle}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommended action</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ação recomendada</p>
               <p className="mt-2 text-sm leading-relaxed text-foreground">{summary.recommended_action}</p>
             </div>
           </div>

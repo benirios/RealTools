@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const LoginSchema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Informe um email válido'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
 })
 
 export type LoginState = {
@@ -35,8 +35,8 @@ export async function loginAction(
 
   if (error) {
     // Map Supabase's "Invalid login credentials" message to the broker-facing copy from UI-SPEC line 195.
-    return { errors: { general: ['Incorrect email or password'] } }
+    return { errors: { general: ['Email ou senha incorretos'] } }
   }
 
-  redirect('/dashboard')
+  redirect('/decision-surface')
 }

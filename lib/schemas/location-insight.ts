@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 export const NearbyBusinessSchema = z.object({
-  name: z.string().min(1, 'Business name is required'),
-  category: z.string().min(1, 'Business category is required'),
+  name: z.string().min(1, 'O nome do negócio é obrigatório'),
+  category: z.string().min(1, 'A categoria do negócio é obrigatória'),
   distanceMeters: z.coerce.number().nonnegative().nullable().optional(),
   address: z.string().nullable().optional(),
-  source: z.string().min(1, 'Business source is required'),
+  source: z.string().min(1, 'A fonte do negócio é obrigatória'),
 })
 
 export const LocationDataSourceSchema = z.object({

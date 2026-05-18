@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const SignUpSchema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Informe um email válido'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
 })
 
 export type SignUpState = {
@@ -43,10 +43,10 @@ export async function signUpAction(
   if (error) {
     // Supabase returns "User already registered" or similar — map to the UI-SPEC copy.
     const message = error.message.toLowerCase().includes('already')
-      ? 'An account with this email already exists'
-      : 'Something went wrong. Please try again.'
+      ? 'Já existe uma conta com este email'
+      : 'Algo deu errado. Tente novamente.'
     return { errors: { general: [message] } }
   }
 
-  redirect('/dashboard')
+  redirect('/decision-surface')
 }

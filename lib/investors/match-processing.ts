@@ -22,14 +22,18 @@ export type MatchDeal = Pick<
   | 'title'
   | 'price_text'
   | 'price_amount'
+  | 'address_text'
   | 'neighborhood'
   | 'location_text'
   | 'city'
   | 'state'
+  | 'lat'
+  | 'lng'
   | 'property_type'
   | 'commercial_type'
   | 'confidence'
   | 'tags'
+  | 'images'
   | 'source_url'
   | 'description'
 > & {
@@ -90,7 +94,7 @@ async function loadInvestors(
   return (data ?? []) as InvestorRow[]
 }
 
-async function loadDeals(
+export async function loadDeals(
   supabase: SupabaseLike,
   userId: string,
   listingIds?: string[]
@@ -153,14 +157,18 @@ async function loadDeals(
       title: listing.title,
       price_text: listing.price_text,
       price_amount: listing.price_amount ?? inferred.priceAmount ?? null,
+      address_text: listing.address_text,
       neighborhood: listing.neighborhood,
       location_text: listing.location_text,
       city: listing.city,
       state: listing.state,
+      lat: listing.lat,
+      lng: listing.lng,
       property_type: listing.property_type ?? inferred.propertyType ?? null,
       commercial_type: listing.commercial_type,
       confidence: listing.confidence,
       tags: listing.tags?.length ? listing.tags : inferred.tags,
+      images: listing.images,
       source_url: listing.source_url,
       description: listing.description,
       opportunity_score: score?.total_score ?? null,
@@ -284,7 +292,7 @@ export async function recalculateMatches(
       for (const deal of deals) {
         const result = calculateInvestorDealMatch(investor as unknown as Record<string, unknown>, deal as unknown as Record<string, unknown>)
         const { error } = await upsertMatch(supabase, userId, investor, deal, result)
-        if (error) throw new Error(error.message ?? 'Failed to save match.')
+        if (error) throw new Error(error.message ?? 'Não foi possível salvar o match.')
         matchedCount += 1
       }
     }
@@ -298,7 +306,7 @@ export async function recalculateMatches(
       skipped: false,
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to recalculate matches.'
+    const message = error instanceof Error ? error.message : 'Não foi possível recalcular os matches.'
     if (listingIds?.length) {
       await setListingsMatchingStatus(supabase, userId, listingIds, 'failed', message)
     }

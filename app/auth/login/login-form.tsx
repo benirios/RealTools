@@ -21,7 +21,7 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder="voce@exemplo.com"
           disabled={isPending}
         />
         {state.errors?.email && (
@@ -35,7 +35,7 @@ export function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
-          placeholder="Password"
+          placeholder="Senha"
           disabled={isPending}
         />
         {state.errors?.password && (

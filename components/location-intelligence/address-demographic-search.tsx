@@ -32,7 +32,7 @@ export function AddressDemographicSearch() {
     const country = String(formData.get('country') ?? 'BR').trim() || 'BR'
 
     if (address.length < 2 && neighborhood.length < 2 && city.length < 2) {
-      setState({ loading: false, error: 'Enter at least an address, neighborhood, or city.', insight: null })
+      setState({ loading: false, error: 'Informe pelo menos um endereço, bairro ou cidade.', insight: null })
       return
     }
 
@@ -58,7 +58,7 @@ export function AddressDemographicSearch() {
           loading: false,
           error: payload?.error
             ? `${payload.error}${payload?.warning ? ` (${payload.warning})` : ''}`
-            : `Failed to search the address. HTTP ${response.status}`,
+            : `Falha ao buscar o endereço. HTTP ${response.status}`,
           insight: null,
         })
         return

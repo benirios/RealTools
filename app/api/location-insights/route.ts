@@ -10,13 +10,13 @@ export async function POST(request: Request) {
   try {
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     let body: unknown
     try {
       body = await request.json()
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+      return NextResponse.json({ error: 'Corpo JSON inválido' }, { status: 400 })
     }
 
     const parsed = await normalizeCreateLocationInsightInput(body)
@@ -39,12 +39,12 @@ export async function POST(request: Request) {
       {
         insight: resolved,
         persisted: false,
-        warning: fallback.error ?? 'Location insight generated but could not be saved.',
+        warning: fallback.error ?? 'A inteligência local foi gerada, mas não pôde ser salva.',
       },
       { status: 200 }
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to search the address.'
+    const message = error instanceof Error ? error.message : 'Falha ao buscar o endereço.'
     console.error('[api/location-insights] POST failed:', error)
     return NextResponse.json({ error: message }, { status: 500 })
   }

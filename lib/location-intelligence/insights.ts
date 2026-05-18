@@ -115,7 +115,7 @@ export async function createLocationInsight(
     .single()
 
   if (error || !data) {
-    return { data: null, error: error?.message ?? 'Failed to create location insight.' }
+    return { data: null, error: error?.message ?? 'Não foi possível criar a inteligência local.' }
   }
 
   return { data: mapRowToInsight(data as LocationInsightRow), error: null }
@@ -173,7 +173,7 @@ export async function upsertLocationInsightForListing(
     .single()
 
   if (error || !data) {
-    return { data: null, error: error?.message ?? 'Failed to save location insight.' }
+    return { data: null, error: error?.message ?? 'Não foi possível salvar a inteligência local.' }
   }
 
   return { data: mapRowToInsight(data as LocationInsightRow), error: null }

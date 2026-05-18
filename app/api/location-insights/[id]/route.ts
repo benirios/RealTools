@@ -10,10 +10,10 @@ export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const insight = await getLocationInsightById(supabase, user.id, id)
-  if (!insight) return NextResponse.json({ error: 'Location insight not found' }, { status: 404 })
+  if (!insight) return NextResponse.json({ error: 'Inteligência local não encontrada' }, { status: 404 })
 
   return NextResponse.json({ insight })
 }

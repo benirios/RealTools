@@ -21,7 +21,7 @@ const OptionalNumberSchema = z.preprocess((value) => {
 }, z.number().nonnegative().optional())
 
 export const InvestorSchema = z.object({
-  name:                   z.string().min(2, 'Investor name is required'),
+  name:                   z.string().min(2, 'O nome do investidor é obrigatório'),
   email:                  z.string().email('Valid email is required').optional().or(z.literal('')),
   phone:                  z.string().optional(),
   budgetMin:              OptionalNumberSchema,

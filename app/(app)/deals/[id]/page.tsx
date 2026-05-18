@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Building2 } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/deals/deal-card'
@@ -77,14 +76,6 @@ export default async function DealHubPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Voltar para Negócios
-      </Link>
-
       <section className="rounded-md border border-border bg-card p-4 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-3">

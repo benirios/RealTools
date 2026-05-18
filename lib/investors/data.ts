@@ -82,7 +82,7 @@ export async function deleteInvestor(supabase: SupabaseLike, userId: string, inv
 
 export const DEMO_INVESTORS: InvestorInput[] = [
   {
-    name: 'Conservative Rental Income Investor',
+    name: 'Investidor conservador de renda de aluguel',
     email: 'renda.conservadora@example.com',
     budgetMin: 250000,
     budgetMax: 750000,
@@ -92,10 +92,10 @@ export const DEMO_INVESTORS: InvestorInput[] = [
     riskLevel: 'low',
     desiredYield: 8,
     tags: ['stable', 'high_yield', 'retail_focus'],
-    notes: 'Prefers leased or easy-to-lease commercial assets.',
+    notes: 'Prefere ativos comerciais alugados ou fáceis de alugar.',
   },
   {
-    name: 'High-Risk Flip Investor',
+    name: 'Investidor agressivo de revenda',
     email: 'flip.agressivo@example.com',
     budgetMin: 150000,
     budgetMax: 550000,
@@ -105,10 +105,10 @@ export const DEMO_INVESTORS: InvestorInput[] = [
     riskLevel: 'high',
     desiredYield: 18,
     tags: ['flip', 'distressed', 'high_risk'],
-    notes: 'Accepts renovation risk when price is attractive.',
+    notes: 'Aceita risco de reforma quando o preço é atrativo.',
   },
   {
-    name: 'Retail-Focused Investor',
+    name: 'Investidor focado em varejo',
     phone: '+55 81 99999-0000',
     budgetMin: 300000,
     budgetMax: 1200000,
@@ -118,6 +118,6 @@ export const DEMO_INVESTORS: InvestorInput[] = [
     riskLevel: 'medium',
     desiredYield: 10,
     tags: ['retail_focus', 'street_front', 'food_service'],
-    notes: 'Looks for visible retail points with foot traffic.',
+    notes: 'Busca pontos de varejo visíveis e com fluxo de pedestres.',
   },
 ]

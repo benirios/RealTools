@@ -38,11 +38,18 @@ export default async function ListingImportPage() {
   const activeTargets = targets.filter((target) => target.is_active).length
   const lastRun = runs[0]
   const failedRuns = runs.filter((run) => run.status === 'failed' || run.failed_count > 0).length
+  const statusLabels: Record<string, string> = {
+    pending: 'Pendente',
+    running: 'Executando',
+    completed: 'Concluído',
+    partial: 'Parcial',
+    failed: 'Falhou',
+  }
 
   const summary = [
     { label: 'Total de imóveis', value: totalListings },
     { label: 'Alvos ativos', value: activeTargets },
-    { label: 'Última execução', value: lastRun?.status ?? '-' },
+    { label: 'Última execução', value: lastRun ? statusLabels[lastRun.status] ?? lastRun.status : '-' },
     { label: 'Execuções com falha', value: failedRuns },
   ]
 

@@ -23,14 +23,14 @@ export async function regenerateAiDealSummaryAction(listingId: string): Promise<
   if (!result.ok) {
     return {
       ok: false,
-      message: result.error?.includes('missing Gemini API key')
-        ? 'AI summary unavailable. Configure GEMINI_API_KEY and try again.'
-        : result.error ?? 'AI summary unavailable.',
+      message: result.error?.includes('chave de API do Gemini ausente')
+        ? 'Resumo IA indisponível. Configure GEMINI_API_KEY e tente novamente.'
+        : result.error ?? 'Resumo IA indisponível.',
     }
   }
 
   return {
     ok: true,
-    message: result.skipped ? 'AI summary is already up to date.' : 'AI summary regenerated.',
+    message: result.skipped ? 'O resumo IA já está atualizado.' : 'Resumo IA regenerado.',
   }
 }

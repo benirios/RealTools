@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const scores = await getScoreHistory(supabase, user.id, id, strategy)
   return NextResponse.json({ scores })
@@ -25,13 +25,13 @@ export async function POST(request: Request, { params }: RouteContext) {
 
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
   const strategySlug = body?.strategy_slug
 
   if (!strategySlug || typeof strategySlug !== 'string') {
-    return NextResponse.json({ error: 'strategy_slug is required' }, { status: 400 })
+    return NextResponse.json({ error: 'strategy_slug é obrigatório' }, { status: 400 })
   }
 
   // T-17-02: validate against allowed slugs before passing to engine

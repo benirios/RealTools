@@ -22,9 +22,9 @@ export default async function InvestorsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold leading-tight text-foreground">Investidores</h1>
+          <h1 className="text-2xl font-semibold leading-tight text-foreground">Clientes</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie as preferências de investidores e combine-os com imóveis comerciais coletados.
+            Gerencie perfis de clientes/investidores e abra workspaces de aquisição centrados em cada cliente.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

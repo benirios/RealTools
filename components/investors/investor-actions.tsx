@@ -25,7 +25,7 @@ export function SeedDemoInvestorsButton() {
       }}
     >
       {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Database className="mr-2 size-4" />}
-      Adicionar investidores demo
+      Adicionar clientes demo
     </Button>
   )
 }
@@ -49,7 +49,7 @@ export function RecalculateAllMatchesButton() {
       }}
     >
       {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
-      Recalcular todos matches
+      Recalcular matches globais
     </Button>
   )
 }

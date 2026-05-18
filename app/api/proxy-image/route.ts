@@ -5,13 +5,13 @@ const ALLOWED_HOSTNAMES = /^([a-z0-9-]+\.)*((olx\.com(\.br)?)|zap\.com\.br)$/
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
-  if (!url) return new NextResponse('Missing url', { status: 400 })
+  if (!url) return new NextResponse('URL ausente', { status: 400 })
 
   let parsed: URL
   try {
     parsed = new URL(url)
   } catch {
-    return new NextResponse('Invalid url', { status: 400 })
+    return new NextResponse('URL inválida', { status: 400 })
   }
 
   if (!ALLOWED_HOSTNAMES.test(parsed.hostname)) {

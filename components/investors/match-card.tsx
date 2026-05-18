@@ -28,6 +28,18 @@ function statusVariant(status: string) {
   return 'secondary' as const
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  strong: 'Forte',
+  medium: 'Médio',
+  weak: 'Fraco',
+}
+
+const CONFIDENCE_LABELS: Record<string, string> = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+}
+
 export function MatchCard({
   deal,
   match_score,
@@ -50,8 +62,8 @@ export function MatchCard({
           <p className="mt-1 text-sm text-muted-foreground">{location}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge variant={statusVariant(match_status)}>{match_status}</Badge>
-          <Badge variant="outline">{confidence}</Badge>
+          <Badge variant={statusVariant(match_status)}>{STATUS_LABELS[match_status] ?? match_status}</Badge>
+          <Badge variant="outline">{CONFIDENCE_LABELS[confidence] ?? confidence}</Badge>
           <span className="text-2xl font-semibold text-foreground">{match_score}%</span>
         </div>
       </div>
@@ -90,23 +102,23 @@ export function MatchCard({
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="rounded-md border border-border bg-muted/25 p-3">
-          <p className="text-xs font-medium uppercase text-muted-foreground">Forcas</p>
+          <p className="text-xs font-medium uppercase text-muted-foreground">Forças</p>
           {strengths.length > 0 ? (
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {strengths.map((strength) => <li key={strength}>{strength}</li>)}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Sem forcas principais registradas.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Sem forças principais registradas.</p>
           )}
         </div>
         <div className="rounded-md border border-border bg-muted/25 p-3">
-          <p className="text-xs font-medium uppercase text-muted-foreground">Pontos de atencao</p>
+          <p className="text-xs font-medium uppercase text-muted-foreground">Pontos de atenção</p>
           {concerns.length > 0 ? (
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {concerns.map((concern) => <li key={concern}>{concern}</li>)}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Sem preocupacoes principais registradas.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Sem preocupações principais registradas.</p>
           )}
         </div>
       </div>

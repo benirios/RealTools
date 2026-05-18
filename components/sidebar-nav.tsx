@@ -2,16 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Briefcase, Building2, MapPinned, Search, Target, User, UserRoundSearch } from 'lucide-react'
+import { Building2, MapPinned, Search, Target, User, UserRoundSearch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/dashboard', label: 'Negócios', icon: Briefcase, matchPrefixes: ['/dashboard', '/deals'] },
   { href: '/decision-surface', label: 'Decisão', icon: Target, matchPrefixes: ['/decision-surface'] },
   { href: '/listings/import', label: 'Pesquisas', icon: Search, matchPrefixes: ['/listings'] },
   { href: '/imoveis', label: 'Imóveis', icon: Building2, matchPrefixes: ['/imoveis'] },
   { href: '/inteligencia-local', label: 'Inteligência local', icon: MapPinned, matchPrefixes: ['/inteligencia-local'] },
-  { href: '/investors', label: 'Investidores', icon: UserRoundSearch, matchPrefixes: ['/investors'] },
+  { href: '/investors', label: 'Clientes', icon: UserRoundSearch, matchPrefixes: ['/investors'] },
   { href: '/profile', label: 'Perfil', icon: User, matchPrefixes: ['/profile'] },
 ]
 

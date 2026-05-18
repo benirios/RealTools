@@ -82,7 +82,7 @@ export function LocationInsightAction({ listingId }: Props) {
           }}
         >
           {strategyPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
-          Recalcular strategy scores
+          Recalcular scores de estratégia
         </Button>
 
         <Button

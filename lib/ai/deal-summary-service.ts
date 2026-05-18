@@ -240,7 +240,7 @@ async function upsertSummaryStatus(
 
 function unavailableSummary(): AiDealSummary {
   return {
-    headline: 'AI summary unavailable',
+    headline: 'Resumo IA indisponível',
     best_fit: ['Dados insuficientes'],
     strengths: ['Resumo indisponível no momento'],
     risks: ['Configure a chave de API para gerar o resumo'],
@@ -298,7 +298,7 @@ export async function generateAiDealSummary(
     if (error || !data) throw new Error(error?.message ?? 'Não foi possível salvar o resumo.')
     return { ok: true, summary: data as AiSummaryRow }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'AI summary unavailable.'
+    const message = error instanceof Error ? error.message : 'Resumo IA indisponível.'
     try {
       const { data } = await upsertSummaryStatus(supabase, userId, listingId, {
         status: 'failed',

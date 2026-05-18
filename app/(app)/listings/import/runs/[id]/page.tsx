@@ -32,6 +32,15 @@ type ListingRow = {
 const BASE_LISTING_COLUMNS = 'id, title, price_text, location_text, address_text, state, city, source, source_url, images, created_at'
 const PROCESSING_LISTING_COLUMNS = `${BASE_LISTING_COLUMNS}, enrichment_status, enrichment_last_processed_at, matching_status, matching_last_processed_at`
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  processing: 'Processando',
+  running: 'Executando',
+  completed: 'Concluído',
+  partial: 'Parcial',
+  failed: 'Falhou',
+}
+
 function getSavedUrls(metadata: Json | null): string[] {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return []
   const savedUrls = metadata.savedUrls
@@ -111,7 +120,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant={run.status === 'failed' ? 'destructive' : run.status === 'partial' ? 'outline' : 'default'}>
-            {run.status}
+            {STATUS_LABELS[run.status] ?? run.status}
           </Badge>
           <ReenrichImportRunButton runId={run.id} />
         </div>
@@ -177,13 +186,13 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
                 <span className="text-muted-foreground">{[listing.city, listing.state].filter(Boolean).join(', ') || '-'}</span>
                 <div className="space-y-1">
                   <Badge variant={listing.enrichment_status === 'failed' ? 'destructive' : listing.enrichment_status === 'completed' ? 'default' : 'outline'}>
-                    {listing.enrichment_status}
+                    {STATUS_LABELS[listing.enrichment_status ?? 'pending'] ?? listing.enrichment_status}
                   </Badge>
                   <p className="text-[11px] text-muted-foreground">{formatDate(listing.enrichment_last_processed_at)}</p>
                 </div>
                 <div className="space-y-1">
                   <Badge variant={listing.matching_status === 'failed' ? 'destructive' : listing.matching_status === 'completed' ? 'default' : 'outline'}>
-                    {listing.matching_status}
+                    {STATUS_LABELS[listing.matching_status ?? 'pending'] ?? listing.matching_status}
                   </Badge>
                   <p className="text-[11px] text-muted-foreground">{formatDate(listing.matching_last_processed_at)}</p>
                 </div>

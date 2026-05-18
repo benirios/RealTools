@@ -48,12 +48,12 @@ function parseSummaryJson(value: string) {
 
 function buildPrompt(input: DealSummaryInput) {
   return [
-    'You are generating a concise commercial real estate deal summary for brokers and investors.',
-    'Use only the structured input data provided. Never invent facts. If data is missing, mention uncertainty.',
-    'Keep the language commercial, practical, and explainable.',
-    'Return only valid JSON with this exact shape:',
-    '{"headline":"short investment-style summary","best_fit":["business type 1","business type 2","business type 3"],"strengths":["strength 1","strength 2","strength 3"],"risks":["risk 1","risk 2"],"investor_angle":"why this may interest investors","recommended_action":"what the user should do next","confidence":"low | medium | high"}',
-    'Structured input:',
+    'Gere um resumo conciso de negócio imobiliário comercial para corretores e investidores.',
+    'Use somente os dados estruturados fornecidos. Nunca invente fatos. Se houver dados ausentes, mencione a incerteza.',
+    'Todo texto de resposta deve estar em português do Brasil, com tom comercial, prático e explicável.',
+    'Retorne somente JSON válido com exatamente este formato:',
+    '{"headline":"resumo curto em estilo de investimento","best_fit":["tipo de negócio 1","tipo de negócio 2","tipo de negócio 3"],"strengths":["força 1","força 2","força 3"],"risks":["risco 1","risco 2"],"investor_angle":"por que isso pode interessar investidores","recommended_action":"o que o usuário deve fazer a seguir","confidence":"low | medium | high"}',
+    'Dados estruturados:',
     JSON.stringify(input),
   ].join('\n')
 }
@@ -68,7 +68,7 @@ async function retry<T>(operation: () => Promise<T>, attempts = 2): Promise<T> {
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('AI summary generation failed.')
+  throw lastError instanceof Error ? lastError : new Error('Falha ao gerar o resumo IA.')
 }
 
 function createGeminiProvider(model: string): DealSummaryProvider {
@@ -77,7 +77,7 @@ function createGeminiProvider(model: string): DealSummaryProvider {
     model,
     async generate({ input, temperature }) {
       const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY
-      if (!apiKey) throw new Error('AI summary unavailable: missing Gemini API key.')
+      if (!apiKey) throw new Error('Resumo IA indisponível: chave de API do Gemini ausente.')
 
       const response = await retry(async () => {
         const result = await fetch(
@@ -105,7 +105,7 @@ function createGeminiProvider(model: string): DealSummaryProvider {
 
         if (!result.ok) {
           const body = await result.text()
-          throw new Error(`Gemini summary request failed: ${result.status} ${body.slice(0, 200)}`)
+          throw new Error(`Falha na solicitação de resumo ao Gemini: ${result.status} ${body.slice(0, 200)}`)
         }
 
         return result.json() as Promise<GeminiResponse>
@@ -116,7 +116,7 @@ function createGeminiProvider(model: string): DealSummaryProvider {
         .join('')
         .trim()
 
-      if (!text) throw new Error('Gemini returned an empty summary.')
+      if (!text) throw new Error('O Gemini retornou um resumo vazio.')
       return parseSummaryJson(text)
     },
   }
@@ -129,5 +129,5 @@ export function createDealSummaryProvider(): DealSummaryProvider {
     return createGeminiProvider(config.model)
   }
 
-  throw new Error(`AI summary unavailable: unsupported provider "${config.provider}".`)
+  throw new Error(`Resumo IA indisponível: provedor não suportado "${config.provider}".`)
 }
