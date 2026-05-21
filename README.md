@@ -1,4 +1,4 @@
-![alt text](https://github.com/benirios/Secmaxxing/blob/main/smaxxing.png "Logo Title Text 1")
+Realtools
 
 RealTools is an AI-powered real estate workflow platform built to streamline property analysis, client matching, and acquisition decision-making for agents, investors, and real estate teams.
 
