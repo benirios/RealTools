@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { DealSchema, type DealState } from '@/lib/schemas/deal'
 import type { Database } from '@/types/supabase'
 
@@ -14,9 +15,8 @@ export async function createDealAction(
   _prevState: DealState,
   formData: FormData
 ): Promise<DealState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const parsed = DealSchema.safeParse({
     title:       formData.get('title'),
@@ -32,9 +32,10 @@ export async function createDealAction(
 
   const insertData: DealInsert = {
     ...parsed.data,
-    user_id: user.id,
+    user_id: userId,
   }
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('deals') as any).insert(insertData)
 
@@ -48,9 +49,8 @@ export async function updateDealAction(
   _prevState: DealState,
   formData: FormData
 ): Promise<DealState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const dealId = formData.get('dealId') as string
   if (!dealId) return { errors: { general: ['ID do negócio ausente.'] } }
@@ -72,11 +72,12 @@ export async function updateDealAction(
     updated_at: new Date().toISOString(),
   }
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('deals') as any)
     .update(updateData)
     .eq('id', dealId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) return { errors: { general: ['Não foi possível salvar o negócio. Tente novamente.'] } }
 
@@ -86,9 +87,10 @@ export async function updateDealAction(
 }
 
 export async function deleteDealAction(dealId: string): Promise<{ error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
 
   // Fetch storage paths before deleting deal (cascade will remove deal_files rows)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,7 +108,7 @@ export async function deleteDealAction(dealId: string): Promise<{ error?: string
   const { error } = await (supabase.from('deals') as any)
     .delete()
     .eq('id', dealId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
 

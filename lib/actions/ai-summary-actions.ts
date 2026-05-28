@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { generateAiDealSummary } from '@/lib/ai/deal-summary-service'
 
 export type AiSummaryActionState = {
@@ -11,11 +12,11 @@ export type AiSummaryActionState = {
 }
 
 export async function regenerateAiDealSummaryAction(listingId: string): Promise<AiSummaryActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await generateAiDealSummary(supabase, user.id, listingId, { force: true })
+  const supabase = createSupabaseServiceClient()
+  const result = await generateAiDealSummary(supabase, userId, listingId, { force: true })
 
   revalidatePath(`/imoveis/${listingId}`)
   revalidatePath('/decision-surface')

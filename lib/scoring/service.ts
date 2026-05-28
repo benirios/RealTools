@@ -5,10 +5,7 @@ import { getListingLocationInsight } from '@/lib/location-intelligence/insights'
 import type { ScoringActionState, ScoreResult } from './schemas'
 import type { Database } from '@/types/supabase'
 
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
 

@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import Link from 'next/link'
 import { Building2, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -120,14 +121,14 @@ export default async function ImoveisPage({
   const resolvedSearchParams = await searchParams
   const filters = getFilters(resolvedSearchParams)
   const filtersActive = hasFilters(filters)
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listingResult = await applyListingFilters((supabase.from('listings') as any)
     .select(PROCESSING_LISTING_COLUMNS)
-    .eq('user_id', user.id), filters)
+    .eq('user_id', userId), filters)
     .order('first_seen_at', { ascending: false }) as { data: ListingSummary[] | null; error: { message?: string } | null }
   let data = listingResult.data
 
@@ -136,7 +137,7 @@ export default async function ImoveisPage({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fallback = await applyListingFilters((supabase.from('listings') as any)
       .select(BASE_LISTING_COLUMNS)
-      .eq('user_id', user.id), filters)
+      .eq('user_id', userId), filters)
       .order('first_seen_at', { ascending: false }) as { data: ListingSummary[] | null }
 
     data = fallback.data

@@ -1,6 +1,6 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/sidebar'
 import { SidebarNav } from '@/components/sidebar-nav'
 import { LogoutButton } from '@/components/logout-button'
@@ -10,15 +10,8 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createSupabaseServerClient()
-  // ALWAYS getUser() — defense in depth even though middleware also checks (CLAUDE.md rule).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/auth/login')
-  }
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   return (
     <div className="min-h-screen bg-background text-foreground md:flex">

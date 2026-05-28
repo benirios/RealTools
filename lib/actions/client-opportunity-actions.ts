@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { completeImportRun, failImportRun, startImportRun } from '@/lib/listings/import-runs'
 import { upsertListing } from '@/lib/listings/ingestion'
 import { scrapeOlxListings } from '@/lib/listings/olx'
@@ -10,7 +11,7 @@ import { processImportRunListings } from '@/lib/listings/processing'
 import { recalculateMatchesForInvestor } from '@/lib/investors/match-processing'
 import type { Database } from '@/types/supabase'
 
-type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>
+type Supabase = ReturnType<typeof createSupabaseServiceClient>
 type ClientOpportunityStatus = 'suggested' | 'saved' | 'sent' | 'interested' | 'rejected' | 'negotiating' | 'closed'
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 type InvestorListingMatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
@@ -161,18 +162,18 @@ export async function updateClientOpportunityStatusAction(
   opportunityId: string,
   status: ClientOpportunityStatus
 ): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   const nextStatus = parseStatus(status)
-  const matchScore = await getMatchScore(supabase, user.id, clientId, opportunityId)
-  const existing = await getExistingClientOpportunity(supabase, user.id, clientId, opportunityId)
+  const matchScore = await getMatchScore(supabase, userId, clientId, opportunityId)
+  const existing = await getExistingClientOpportunity(supabase, userId, clientId, opportunityId)
 
   const { error } = await upsertClientOpportunity(
     supabase,
     {
-      user_id: user.id,
+      user_id: userId,
       client_id: clientId,
       opportunity_id: opportunityId,
       status: nextStatus,
@@ -191,9 +192,8 @@ export async function updateClientOpportunityStatusAction(
 }
 
 export async function updateClientOpportunityNotesAction(formData: FormData): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const clientId = String(formData.get('clientId') ?? '')
   const opportunityId = String(formData.get('opportunityId') ?? '')
@@ -204,13 +204,14 @@ export async function updateClientOpportunityNotesAction(formData: FormData): Pr
     return { ok: false, message: 'Cliente ou oportunidade ausente.' }
   }
 
-  const matchScore = await getMatchScore(supabase, user.id, clientId, opportunityId)
-  const existing = await getExistingClientOpportunity(supabase, user.id, clientId, opportunityId)
+  const supabase = createSupabaseServiceClient()
+  const matchScore = await getMatchScore(supabase, userId, clientId, opportunityId)
+  const existing = await getExistingClientOpportunity(supabase, userId, clientId, opportunityId)
 
   const { error } = await upsertClientOpportunity(
     supabase,
     {
-      user_id: user.id,
+      user_id: userId,
       client_id: clientId,
       opportunity_id: opportunityId,
       status,
@@ -232,14 +233,14 @@ export async function removeClientOpportunityAction(
   clientId: string,
   opportunityId: string
 ): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('client_opportunities') as any)
     .delete()
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('client_id', clientId)
     .eq('opportunity_id', opportunityId)
 
@@ -252,13 +253,13 @@ export async function removeClientOpportunityAction(
 }
 
 export async function recalculateClientWorkspaceMatchesAction(clientId: string): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await recalculateMatchesForInvestor(supabase, user.id, clientId, true)
+  const supabase = createSupabaseServiceClient()
+  const result = await recalculateMatchesForInvestor(supabase, userId, clientId, true)
   if (!result.error) {
-    await syncClientOpportunitiesForMatches(supabase, user.id, clientId)
+    await syncClientOpportunitiesForMatches(supabase, userId, clientId)
   }
 
   revalidatePath('/investors')
@@ -273,9 +274,8 @@ export async function runClientOlxSearchImportAction(
   _prevState: ClientSearchImportState,
   formData: FormData
 ): Promise<ClientSearchImportState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const clientId = String(formData.get('clientId') ?? '')
   const locationQuery = String(formData.get('locationQuery') ?? '').trim()
@@ -290,7 +290,8 @@ export async function runClientOlxSearchImportAction(
   if (locationQuery.length < 2) return { errors: { locationQuery: ['Informe um endereço, cidade ou região.'] } }
   if (searchTerm.length < 2) return { errors: { searchTerm: ['Informe um termo de busca.'] } }
 
-  const { data: run, error: runError } = await startImportRun(supabase, user.id, {
+  const supabase = createSupabaseServiceClient()
+  const { data: run, error: runError } = await startImportRun(supabase, userId, {
     source: 'olx',
     metadata: {
       importType: 'client_workspace_search',
@@ -319,7 +320,7 @@ export async function runClientOlxSearchImportAction(
     const savedUrls: string[] = []
 
     for (const listing of listings) {
-      const { error } = await upsertListing(supabase, user.id, listing)
+      const { error } = await upsertListing(supabase, userId, listing)
       if (error) {
         failedCount += 1
         failures.push(`${listing.sourceUrl}: ${error.message ?? 'falha ao salvar'}`)
@@ -332,7 +333,7 @@ export async function runClientOlxSearchImportAction(
     await completeImportRun(
       supabase,
       run.id,
-      user.id,
+      userId,
       {
         createdCount: savedCount,
         updatedCount: 0,
@@ -352,22 +353,22 @@ export async function runClientOlxSearchImportAction(
       }
     )
 
-    const automation = await processImportRunListings(supabase, user.id, run.id, savedUrls)
+    const automation = await processImportRunListings(supabase, userId, run.id, savedUrls)
 
     const savedListings = savedUrls.length > 0
       ? await (async () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await (supabase.from('listings') as any)
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .in('source_url', savedUrls) as { data: Array<{ id: string }> | null }
         return data ?? []
       })()
       : []
 
     const listingIds = savedListings.map((listing) => listing.id)
-    await recalculateMatchesForInvestor(supabase, user.id, clientId, true)
-    const syncedCount = await syncClientOpportunitiesForMatches(supabase, user.id, clientId, listingIds)
+    await recalculateMatchesForInvestor(supabase, userId, clientId, true)
+    const syncedCount = await syncClientOpportunitiesForMatches(supabase, userId, clientId, listingIds)
 
     revalidatePath('/listings/import')
     revalidatePath('/imoveis')
@@ -380,7 +381,7 @@ export async function runClientOlxSearchImportAction(
     }
   } catch (error) {
     const message = getErrorMessage(error)
-    await failImportRun(supabase, run.id, user.id, message, {
+    await failImportRun(supabase, run.id, userId, message, {
       source: 'olx',
       importType: 'client_workspace_search',
       clientId,

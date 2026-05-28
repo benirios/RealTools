@@ -10,10 +10,7 @@ import type { ResolvedLocationIntelligence } from '@/lib/location-intelligence/p
 
 type LocationInsightRow = Database['public']['Tables']['location_insights']['Row']
 type LocationInsightInsert = Database['public']['Tables']['location_insights']['Insert']
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 const ResolvedLocationInsightSchema = LocationInsightInputSchema.extend({
   listingId: z.string().uuid().nullable().optional(),

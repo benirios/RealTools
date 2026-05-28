@@ -1,10 +1,11 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 
 export default async function ProfilePage() {
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const user = await currentUser()
 
   return (
     <div className="space-y-6">
@@ -22,13 +23,15 @@ export default async function ProfilePage() {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             E-mail
           </p>
-          <p className="text-sm text-foreground">{user?.email ?? 'desconhecido'}</p>
+          <p className="text-sm text-foreground">
+            {user?.emailAddresses[0]?.emailAddress ?? 'desconhecido'}
+          </p>
         </div>
         <div className="space-y-1">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             ID do usuário
           </p>
-          <p className="text-xs text-muted-foreground font-mono break-all">{user?.id ?? '—'}</p>
+          <p className="text-xs text-muted-foreground font-mono break-all">{userId}</p>
         </div>
       </div>
     </div>

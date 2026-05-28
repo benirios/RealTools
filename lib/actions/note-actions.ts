@@ -3,12 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import type { Database } from '@/types/supabase'
 
-// Explicit table types to work around supabase-js 2.104.x __InternalSupabase
-// PostgrestVersion inference issue that causes from() to return Relation=never.
 type NoteInsert = Database['public']['Tables']['notes']['Insert']
 type NoteUpdate = Database['public']['Tables']['notes']['Update']
 
@@ -33,9 +31,8 @@ export async function createNoteAction(
   _prevState: NoteState,
   formData: FormData
 ): Promise<NoteState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const parsed = NoteSchema.safeParse({
     content: formData.get('content'),
@@ -49,19 +46,19 @@ export async function createNoteAction(
   const insertData: NoteInsert = {
     content: parsed.data.content,
     deal_id: parsed.data.deal_id,
-    user_id: user.id,
+    user_id: userId,
   }
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('notes') as any).insert(insertData)
 
   if (error) return { errors: { general: ['Não foi possível salvar a nota. Tente novamente.'] } }
 
   try {
-    const serviceClient = createSupabaseServiceClient()
     // Best-effort telemetry: primary note creation has already succeeded.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (serviceClient.from('activities') as any).insert({
+    await (supabase.from('activities') as any).insert({
       deal_id: parsed.data.deal_id,
       event_type: 'note_added',
       metadata: {},
@@ -78,9 +75,8 @@ export async function updateNoteAction(
   _prevState: NoteState,
   formData: FormData
 ): Promise<NoteState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const noteId = formData.get('note_id') as string
   const dealId = formData.get('deal_id') as string
@@ -99,11 +95,12 @@ export async function updateNoteAction(
     updated_at: new Date().toISOString(),
   }
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('notes') as any)
     .update(updateData)
     .eq('id', noteId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) return { errors: { general: ['Não foi possível salvar a nota. Tente novamente.'] } }
 
@@ -115,15 +112,15 @@ export async function deleteNoteAction(
   noteId: string,
   dealId: string
 ): Promise<{ error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('notes') as any)
     .delete()
     .eq('id', noteId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
 

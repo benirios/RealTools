@@ -1,5 +1,5 @@
 import 'server-only'
-import { createHash } from 'node:crypto'
+import { hashInputs } from '@/lib/hash'
 import { createDealSummaryProvider, getDealSummaryProviderConfig } from '@/lib/ai/deal-summary-provider'
 import { AiDealSummarySchema, type AiDealSummary, type DealSummaryInput } from '@/lib/ai/deal-summary-schema'
 import type { Database, Json } from '@/types/supabase'
@@ -10,10 +10,7 @@ type OpportunityScoreRow = Database['public']['Tables']['opportunity_scores']['R
 type InvestorListingMatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
 type AiSummaryRow = Database['public']['Tables']['listing_ai_summaries']['Row']
 
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 export type AiSummaryResult = {
   ok: boolean
@@ -22,24 +19,7 @@ export type AiSummaryResult = {
   error?: string
 }
 
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`
-  }
 
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
-    return `{${entries.join(',')}}`
-  }
-
-  return JSON.stringify(value)
-}
-
-function hashInput(input: DealSummaryInput) {
-  return createHash('sha256').update(stableStringify(input)).digest('hex')
-}
 
 function firstArray(value: Json | null): unknown[] {
   return Array.isArray(value) ? value : []
@@ -207,7 +187,7 @@ export async function buildDealSummaryInput(
       })),
     }
 
-    return { input, inputHash: hashInput(input) }
+    return { input, inputHash: hashInputs(input) }
   } catch (error) {
     return {
       input: null,

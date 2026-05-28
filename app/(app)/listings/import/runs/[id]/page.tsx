@@ -4,7 +4,8 @@ import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ReenrichImportRunButton } from '@/components/listings/import-actions'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import type { Json } from '@/types/supabase'
 
 type PageProps = {
@@ -60,15 +61,15 @@ function formatDate(value: string | null | undefined) {
 
 export default async function ImportRunListingsPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: run } = await (supabase.from('listing_import_runs') as any)
     .select('id, source, status, created_count, updated_count, failed_count, error_message, metadata, completed_at, started_at')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (!run) notFound()
@@ -80,7 +81,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listingResult = await (supabase.from('listings') as any)
       .select(PROCESSING_LISTING_COLUMNS)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .in('source_url', savedUrls)
       .order('created_at', { ascending: false }) as { data: ListingRow[] | null; error: { message?: string } | null }
     let data = listingResult.data
@@ -90,7 +91,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const fallback = await (supabase.from('listings') as any)
         .select(BASE_LISTING_COLUMNS)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('source_url', savedUrls)
         .order('created_at', { ascending: false }) as { data: ListingRow[] | null }
 

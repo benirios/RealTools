@@ -3,8 +3,7 @@ import type { Database } from '@/types/supabase'
 type InvestorInsert = Database['public']['Tables']['investors']['Insert']
 type InvestorUpdate = Database['public']['Tables']['investors']['Update']
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseLike = { from: (relation: string) => any }
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 export type InvestorInput = {
   name: string

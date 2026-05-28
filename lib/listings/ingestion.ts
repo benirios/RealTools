@@ -3,8 +3,7 @@ import type { Database, Json } from '@/types/supabase'
 
 type ListingInsert = Database['public']['Tables']['listings']['Insert']
 type ListingImportTargetInsert = Database['public']['Tables']['listing_import_targets']['Insert']
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseLike = { from: (relation: string) => any }
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 export function toListingInsert(userId: string, draft: ListingDraft): ListingInsert {
   const parsed = ListingDraftSchema.parse(draft)

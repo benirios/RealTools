@@ -1,5 +1,6 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { InvestorFormModal } from '@/components/investors/investor-form-modal'
 import { InvestorsTable } from '@/components/investors/investors-table'
 import { RecalculateAllMatchesButton, SeedDemoInvestorsButton } from '@/components/investors/investor-actions'
@@ -8,14 +9,14 @@ import type { Database } from '@/types/supabase'
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 
 export default async function InvestorsPage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: investors } = await (supabase.from('investors') as any)
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false }) as { data: InvestorRow[] | null }
 
   return (

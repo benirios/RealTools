@@ -9,10 +9,7 @@ import type { Database, Json } from '@/types/supabase'
 type ListingRow = Database['public']['Tables']['listings']['Row']
 type ImportRunRow = Database['public']['Tables']['listing_import_runs']['Row']
 
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 type ListingProcessingResult = {
   listingId: string

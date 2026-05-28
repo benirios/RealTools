@@ -3,10 +3,7 @@ import { createLocationInsight, upsertLocationInsightForListing } from '@/lib/lo
 import { resolveLocationIntelligence } from '@/lib/location-intelligence/providers'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 function buildDemoInputFromListing(listing: ListingRow, listingId: string | null) {
   const city = listing.city?.trim() || 'São Paulo'

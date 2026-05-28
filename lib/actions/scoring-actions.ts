@@ -2,7 +2,8 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { scoreListingService } from '@/lib/scoring/service'
 import { STRATEGIES, STRATEGY_SLUGS } from '@/lib/scoring/strategies'
 import type { ScoringActionState } from '@/lib/scoring/schemas'
@@ -13,16 +14,15 @@ export async function scoreListingAction(
   listingId: string,
   strategySlug: string
 ): Promise<ScoringActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  // T-17-02: validate strategy_slug before passing to engine
   if (!STRATEGY_SLUGS.includes(strategySlug as typeof STRATEGY_SLUGS[number])) {
     return { errors: { general: ['Estratégia inválida.'] } }
   }
 
-  const result = await scoreListingService(supabase, user.id, listingId, strategySlug)
+  const supabase = createSupabaseServiceClient()
+  const result = await scoreListingService(supabase, userId, listingId, strategySlug)
 
   revalidatePath(`/imoveis/${listingId}`)
   revalidateTag('opportunity_score')
@@ -34,19 +34,17 @@ export async function getBestFitAction(listingId: string): Promise<{
   scores: ScoringActionState[]
   topStrategies: { slug: string; label: string; totalScore: number; fitLabel: string }[]
 }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  // D-04: exactly cafe, logistics, pharmacy — persisted per D-05 by scoreListingService
+  const supabase = createSupabaseServiceClient()
   const results = await Promise.all(
-    BEST_FIT_SLUGS.map(slug => scoreListingService(supabase, user.id, listingId, slug))
+    BEST_FIT_SLUGS.map(slug => scoreListingService(supabase, userId, listingId, slug))
   )
 
   revalidatePath(`/imoveis/${listingId}`)
   revalidateTag('opportunity_score')
 
-  // D-06: ranked top 1-2, full ScoringActionState included
   const scored = results
     .map((r, i) => ({ slug: BEST_FIT_SLUGS[i], state: r }))
     .filter(x => x.state.score !== undefined && x.state.score !== null)

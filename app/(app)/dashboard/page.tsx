@@ -1,18 +1,19 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { Briefcase, CheckCircle2, CircleDollarSign, Clock3 } from 'lucide-react'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { DealCard } from '@/components/deals/deal-card'
 import { DealFormModal } from '@/components/deals/deal-form-modal'
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: deals } = await (supabase.from('deals') as any)
     .select('id, title, address, price, status')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false }) as {
       data: { id: string; title: string; address: string | null; price: string | null; status: string }[] | null
     }

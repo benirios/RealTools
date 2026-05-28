@@ -4,8 +4,7 @@ import type { ListingSource } from '@/lib/schemas/listing'
 type ImportRunRow = Database['public']['Tables']['listing_import_runs']['Row']
 type ImportRunInsert = Database['public']['Tables']['listing_import_runs']['Insert']
 type ImportRunUpdate = Database['public']['Tables']['listing_import_runs']['Update']
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseLike = { from: (relation: string) => any }
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 type StartImportRunInput = {
   source: ListingSource

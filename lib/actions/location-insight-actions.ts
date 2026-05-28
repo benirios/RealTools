@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { createDemoLocationInsightsForListing } from '@/lib/location-intelligence/demo-seeds'
-import { loadListingForUser as loadOwnedListingForUser } from '@/lib/location-intelligence/api'
+import { loadListingForUser } from '@/lib/location-intelligence/api'
 import { recalculateMatchesForListing } from '@/lib/investors/match-processing'
 import { enrichScoreAndMatchListing } from '@/lib/listings/processing'
 import { scoreListingService } from '@/lib/scoring/service'
@@ -19,19 +20,13 @@ function successState(message: string): LocationInsightActionState {
   return { message }
 }
 
-async function loadListingForUser(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, listingId: string, userId: string) {
-  return loadOwnedListingForUser(supabase, userId, listingId)
-}
-
 export async function enrichListingLocationAction(listingId: string): Promise<LocationInsightActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await enrichScoreAndMatchListing(supabase, user.id, listingId, { force: true })
-  if (result.error) {
-    return errorState(result.error)
-  }
+  const supabase = createSupabaseServiceClient()
+  const result = await enrichScoreAndMatchListing(supabase, userId, listingId, { force: true })
+  if (result.error) return errorState(result.error)
 
   revalidatePath('/imoveis')
   revalidatePath(`/imoveis/${listingId}`)
@@ -41,25 +36,23 @@ export async function enrichListingLocationAction(listingId: string): Promise<Lo
 }
 
 export async function seedDemoLocationInsightsAction(listingId: string): Promise<LocationInsightActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const listing = await loadListingForUser(supabase, listingId, user.id)
+  const supabase = createSupabaseServiceClient()
+  const listing = await loadListingForUser(supabase, userId, listingId)
   if (!listing) return errorState('Imóvel não encontrado.')
 
-  const result = await createDemoLocationInsightsForListing(supabase, user.id, listing)
-  if (!result.ok) {
-    return errorState('Não foi possível criar os dados de demonstração.')
-  }
+  const result = await createDemoLocationInsightsForListing(supabase, userId, listing)
+  if (!result.ok) return errorState('Não foi possível criar os dados de demonstração.')
 
-  const scoring = await scoreListingService(supabase, user.id, listingId, 'any')
+  const scoring = await scoreListingService(supabase, userId, listingId, 'any')
   if (scoring.errors?.general?.[0]) return errorState(scoring.errors.general[0])
 
-  const strategyFit = await calculateStrategyFitScoresForListingService(supabase, user.id, listingId)
+  const strategyFit = await calculateStrategyFitScoresForListingService(supabase, userId, listingId)
   if (strategyFit.errors?.general?.[0]) return errorState(strategyFit.errors.general[0])
 
-  const matching = await recalculateMatchesForListing(supabase, user.id, listingId, true)
+  const matching = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (matching.error) return errorState(matching.error)
 
   revalidatePath('/imoveis')
@@ -70,11 +63,11 @@ export async function seedDemoLocationInsightsAction(listingId: string): Promise
 }
 
 export async function recalculateListingMatchesAction(listingId: string): Promise<LocationInsightActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await recalculateMatchesForListing(supabase, user.id, listingId, true)
+  const supabase = createSupabaseServiceClient()
+  const result = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (result.error) return errorState(result.error)
 
   revalidatePath('/imoveis')
@@ -85,14 +78,14 @@ export async function recalculateListingMatchesAction(listingId: string): Promis
 }
 
 export async function recalculateListingStrategyScoresAction(listingId: string): Promise<LocationInsightActionState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await calculateStrategyFitScoresForListingService(supabase, user.id, listingId)
+  const supabase = createSupabaseServiceClient()
+  const result = await calculateStrategyFitScoresForListingService(supabase, userId, listingId)
   if (result.errors?.general?.[0]) return errorState(result.errors.general[0])
 
-  const matching = await recalculateMatchesForListing(supabase, user.id, listingId, true)
+  const matching = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (matching.error) return errorState(matching.error)
 
   revalidatePath('/imoveis')

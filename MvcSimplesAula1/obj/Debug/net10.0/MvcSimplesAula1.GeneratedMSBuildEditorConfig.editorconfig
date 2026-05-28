@@ -1,0 +1,75 @@
+is_global = true
+build_property.TargetFramework = net10.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v10.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = MvcSimplesAula1
+build_property.RootNamespace = MvcSimplesAula1
+build_property.ProjectDir = /Users/beni/MvcSimplesAula1/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/beni/MvcSimplesAula1
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 10.0
+build_property.EnableCodeStyleSeverity = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Ficha.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vRmljaGEuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Lista.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vTGlzdGEuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Ola.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vT2xhLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Perfil.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vUGVyZmlsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Curso/Sobre.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQ3Vyc28vU29icmUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Home/Privacy.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9Qcml2YWN5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Shared/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL0Vycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Shared/_ValidationScriptsPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/beni/MvcSimplesAula1/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-yklld6ihf9

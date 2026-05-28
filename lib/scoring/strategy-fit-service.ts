@@ -1,5 +1,5 @@
 import 'server-only'
-import { createHash } from 'node:crypto'
+import { hashInputs } from '@/lib/hash'
 import { revalidateTag } from 'next/cache'
 import { getListingLocationInsight } from '@/lib/location-intelligence/insights'
 import { calculateStrategyFitScore, STRATEGY_FIT_SLUGS, type StrategyFitScoreResult, type StrategyFitSlug } from './strategy-fit'
@@ -7,10 +7,7 @@ import { upsertStrategyFitScore } from './strategy-fit-data'
 import type { Database } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 type StrategyFitActionState = {
   message?: string
@@ -33,20 +30,7 @@ async function loadListingForStrategyFit(
   return (data ?? null) as ListingRow | null
 }
 
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
-  if (value && typeof value === 'object') {
-    return `{${Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, next]) => `${JSON.stringify(key)}:${stableStringify(next)}`)
-      .join(',')}}`
-  }
-  return JSON.stringify(value)
-}
 
-function hashInputs(value: unknown): string {
-  return createHash('sha256').update(stableStringify(value)).digest('hex')
-}
 
 export async function calculateStrategyFitScoresForListingService(
   supabase: SupabaseLike,

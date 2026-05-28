@@ -54,3 +54,8 @@ next-env.d.ts
 
 # graphify cache
 graphify-out/cache/
+
+# Added by secmaxxing audit
+.env.local
+.env.*.local
+*.key

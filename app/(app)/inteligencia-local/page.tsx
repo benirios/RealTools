@@ -1,11 +1,10 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { AddressDemographicSearch } from '@/components/location-intelligence/address-demographic-search'
 
 export default async function InteligenciaLocalPage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   return (
     <div className="space-y-6">

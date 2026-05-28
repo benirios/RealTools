@@ -1,5 +1,5 @@
 import 'server-only'
-import { createHash } from 'node:crypto'
+import { hashInputs } from '@/lib/hash'
 import { calculateInvestorDealMatch, type InvestorDealMatch } from '@/lib/investors/matching'
 import { enrichListingFields } from '@/lib/listings/enrichment'
 import type { Database, Json } from '@/types/supabase'
@@ -11,10 +11,7 @@ type OpportunityScoreRow = Database['public']['Tables']['opportunity_scores']['R
 type StrategyFitScoreRow = Database['public']['Tables']['strategy_fit_scores']['Row']
 type InvestorListingMatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
 
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 export type MatchDeal = Pick<
   ListingRow,
@@ -64,20 +61,7 @@ function buildExplanation(result: InvestorDealMatch) {
   return result.explanation || `${result.match_score}/100 compatibility: ${result.reasons.slice(0, 3).join('; ')}.`
 }
 
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
-  if (value && typeof value === 'object') {
-    return `{${Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, next]) => `${JSON.stringify(key)}:${stableStringify(next)}`)
-      .join(',')}}`
-  }
-  return JSON.stringify(value)
-}
 
-function inputHash(value: unknown) {
-  return createHash('sha256').update(stableStringify(value)).digest('hex')
-}
 
 async function loadInvestors(
   supabase: SupabaseLike,
@@ -219,7 +203,7 @@ async function upsertMatch(
     concerns: matchResult.concerns as unknown as Json,
     recommended_action: matchResult.recommended_action,
     missing_data: matchResult.missing_data as unknown as Json,
-    input_data_hash: inputHash({ investor, deal }),
+    input_data_hash: hashInputs({ investor, deal }),
     generated_at: generatedAt,
     processed_at: generatedAt,
   }

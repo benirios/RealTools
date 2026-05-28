@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { rankInvestorDeals } from '@/lib/investors/matching'
 import { enrichListingFields } from '@/lib/listings/enrichment'
 
@@ -9,15 +10,16 @@ type RouteContext = {
 
 export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
+  const supabase = createSupabaseServiceClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: investor } = await (supabase.from('investors') as any)
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (!investor) return NextResponse.json({ error: 'Investidor não encontrado' }, { status: 404 })
@@ -25,7 +27,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listings, error } = await (supabase.from('listings') as any)
     .select('id, title, price_text, price_amount, neighborhood, location_text, address_text, city, state, property_type, commercial_type, confidence, tags, source, source_url, description, images, created_at')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -46,20 +48,20 @@ export async function GET(_request: Request, { params }: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: scores } = listingIds.length ? await (supabase.from('opportunity_scores') as any)
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('listing_id', listingIds)
     .order('total_score', { ascending: false }) : { data: [] }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: insights } = listingIds.length ? await (supabase.from('location_insights') as any)
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('listing_id', listingIds) : { data: [] }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: strategyScores } = listingIds.length ? await (supabase.from('strategy_fit_scores') as any)
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .in('listing_id', listingIds) : { data: [] }
 
   const scoreByListing = new Map<string, Record<string, unknown>>()

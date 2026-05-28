@@ -20,14 +20,20 @@ type GeminiResponse = {
   }>
 }
 
+type OpenAIResponse = {
+  choices?: Array<{
+    message?: { content?: string | null }
+  }>
+}
+
 function parseTemperature(value: string | undefined) {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), 1) : 0.3
 }
 
 export function getDealSummaryProviderConfig() {
-  const provider = (process.env.AI_DEAL_SUMMARY_PROVIDER ?? 'gemini').trim().toLowerCase()
-  const model = (process.env.AI_DEAL_SUMMARY_MODEL ?? process.env.GEMINI_MODEL ?? 'gemini-3-flash-preview').trim()
+  const provider = (process.env.AI_DEAL_SUMMARY_PROVIDER ?? 'openrouter').trim().toLowerCase()
+  const model = (process.env.AI_DEAL_SUMMARY_MODEL ?? process.env.GEMINI_MODEL ?? 'google/gemini-flash-1.5').trim()
   const temperature = parseTemperature(process.env.AI_DEAL_SUMMARY_TEMPERATURE)
 
   return { provider, model, temperature }
@@ -122,8 +128,50 @@ function createGeminiProvider(model: string): DealSummaryProvider {
   }
 }
 
+function createOpenRouterProvider(model: string): DealSummaryProvider {
+  return {
+    provider: 'openrouter',
+    model,
+    async generate({ input, temperature }) {
+      const apiKey = process.env.OPENROUTER_API_KEY
+      if (!apiKey) throw new Error('Resumo IA indisponível: chave de API do OpenRouter ausente.')
+
+      const response = await retry(async () => {
+        const result = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            temperature,
+            messages: [{ role: 'user', content: buildPrompt(input) }],
+            response_format: { type: 'json_object' },
+          }),
+        })
+
+        if (!result.ok) {
+          const body = await result.text()
+          throw new Error(`Falha na solicitação de resumo ao OpenRouter: ${result.status} ${body.slice(0, 200)}`)
+        }
+
+        return result.json() as Promise<OpenAIResponse>
+      })
+
+      const text = response.choices?.[0]?.message?.content?.trim()
+      if (!text) throw new Error('O OpenRouter retornou um resumo vazio.')
+      return parseSummaryJson(text)
+    },
+  }
+}
+
 export function createDealSummaryProvider(): DealSummaryProvider {
   const config = getDealSummaryProviderConfig()
+
+  if (config.provider === 'openrouter') {
+    return createOpenRouterProvider(config.model)
+  }
 
   if (config.provider === 'gemini') {
     return createGeminiProvider(config.model)

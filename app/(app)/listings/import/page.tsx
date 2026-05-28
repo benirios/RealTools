@@ -1,14 +1,15 @@
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { ClearImportRunsButton, OlxSearchImportForm, SeedDefaultTargetsButton } from '@/components/listings/import-actions'
 import { ImportRunsTable, type ImportRun } from '@/components/listings/import-runs-table'
 import { ImportTargetsTable, type ImportTarget } from '@/components/listings/import-targets-table'
 
 export default async function ListingImportPage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   const [
     targetsResult,
     runsResult,
@@ -17,19 +18,19 @@ export default async function ListingImportPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('listing_import_targets') as any)
       .select('id, source, country, state, city, search_term, is_active')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('state', { ascending: true })
       .order('city', { ascending: true }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('listing_import_runs') as any)
       .select('id, source, status, created_count, updated_count, skipped_count, failed_count, error_message, started_at, completed_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(12),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('listings') as any)
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id),
+      .eq('user_id', userId),
   ])
 
   const targets = (targetsResult.data ?? []) as ImportTarget[]

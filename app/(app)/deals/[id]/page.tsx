@@ -1,8 +1,9 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { StatusBadge } from '@/components/deals/deal-card'
 import { DealFormModal } from '@/components/deals/deal-form-modal'
 import { DeleteDealDialog } from '@/components/deals/delete-deal-dialog'
@@ -22,9 +23,10 @@ export default async function DealHubPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
 
   // Parallel fetch — never fetch per-component (RESEARCH.md Anti-Pattern)
   // All queries use `as any` cast to bypass supabase-js 2.104.x PostgrestVersion=never inference bug
@@ -38,7 +40,7 @@ export default async function DealHubPage({
     (supabase.from('deals') as any)
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single() as Promise<{ data: DealRow | null; error: unknown }>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('notes') as any)
@@ -139,7 +141,7 @@ export default async function DealHubPage({
 
           <NotesSection notes={notes} dealId={deal.id} />
 
-          <FilesSection files={filesWithUrls} dealId={deal.id} userId={user.id} />
+          <FilesSection files={filesWithUrls} dealId={deal.id} userId={userId} />
         </div>
 
         <div className="space-y-6">

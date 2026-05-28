@@ -1,0 +1,564 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #0066cc;
+    --primary-light: #4d9fff;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-light: #666;
+    --border: #ddd;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    height: 100vh;
+    overflow: hidden;
+    padding: 3px;
+}
+
+.container {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 3px;
+}
+
+/* HEADER */
+.header {
+    padding: 6px 8px;
+    background: linear-gradient(135deg, #003d99 0%, #0055cc 100%);
+    border-radius: 6px;
+    color: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.header .location {
+    font-size: 0.7rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.header .timestamp {
+    font-size: 0.7rem;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+/* WIDGETS GRID */
+.widgets-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 3px;
+    overflow: hidden;
+}
+
+.widget {
+    background: var(--card);
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.widget:hover {
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+    border-color: var(--primary-light);
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1.5px solid var(--border);
+}
+
+.widget-header h2 {
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.widget-icon {
+    font-size: 1.2rem;
+}
+
+.widget-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    min-height: 0;
+}
+
+/* TEMPERATURE */
+.temperature-widget {
+    background: linear-gradient(135deg, rgba(0, 102, 204, 0.05) 0%, rgba(77, 159, 255, 0.05) 100%);
+}
+
+.main-value {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 2px;
+    margin: 6px 0;
+}
+
+.temperature-display {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.temperature-unit {
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+.temp-chart.compact {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 1px;
+    margin: 6px 0;
+    padding: 6px 4px;
+    background: #f3f6fb;
+    border-radius: 4px;
+    height: 70px;
+    flex: 1;
+}
+
+.chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, #0066cc 0%, #4d9fff 100%);
+    border-radius: 1px 1px 0 0;
+    min-height: 6px;
+}
+
+.chart-labels-compact {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.temp-details-compact {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.detail-compact {
+    padding: 5px;
+    background: #f9fbfd;
+    border-radius: 4px;
+    text-align: center;
+    border: 1px solid #e8eef5;
+}
+
+.detail-compact .label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.detail-compact .value {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* HUMIDITY */
+.humidity-widget {
+    background: linear-gradient(135deg, rgba(0, 102, 204, 0.05) 0%, rgba(77, 159, 255, 0.05) 100%);
+}
+
+.circular-progress.compact {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+}
+
+.progress-circle {
+    width: 100%;
+    height: 100%;
+}
+
+.progress-background {
+    fill: none;
+    stroke: #e0e8f0;
+    stroke-width: 7;
+}
+
+.progress-fill {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 7;
+    stroke-linecap: round;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.humidity-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.humidity-unit {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-light);
+}
+
+.humidity-info {
+    text-align: center;
+    margin-top: 6px;
+}
+
+.status-description {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+
+.humidity-range {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 6px;
+    background: #f9fbfd;
+    border-radius: 4px;
+    border: 1px solid #e8eef5;
+}
+
+.range-item {
+    text-align: center;
+}
+
+.range-label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.range-value {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* AIR QUALITY */
+.air-quality-widget {
+    background: linear-gradient(135deg, rgba(0, 102, 204, 0.05) 0%, rgba(77, 159, 255, 0.05) 100%);
+}
+
+.aqi-score {
+    display: flex;
+    justify-content: center;
+    margin: 6px 0;
+}
+
+.aqi-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.aqi-circle.good {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+}
+
+.aqi-number {
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.aqi-status.compact {
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.aqi-label {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.status-good {
+    color: #27ae60;
+    font-weight: 700;
+}
+
+.pollutants.compact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pollutant-item {
+    padding: 5px;
+    background: #f9fbfd;
+    border-radius: 4px;
+    border: 1px solid #e8eef5;
+}
+
+.pollutant-name {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.pollutant-bar {
+    width: 100%;
+    height: 5px;
+    background: #e0e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 2px;
+}
+
+.pollutant-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0066cc 0%, #4d9fff 100%);
+}
+
+.pollutant-value {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+/* NEWS */
+.news-widget {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 152, 0, 0.05) 100%);
+}
+
+.carousel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.carousel-track {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 0;
+}
+
+.news-item {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.news-item.active {
+    opacity: 1;
+    position: relative;
+}
+
+.news-content {
+    padding: 8px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.news-content h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+.news-content p {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    margin-bottom: 6px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-date {
+    font-size: 0.6rem;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.carousel-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0;
+    flex-shrink: 0;
+}
+
+.carousel-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 700;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-btn:hover {
+    background: #0052a3;
+    transform: scale(1.1);
+}
+
+.carousel-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d0d0d0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dot.active {
+    background: var(--primary);
+    width: 16px;
+    border-radius: 3px;
+}
+
+.dot:hover {
+    background: var(--primary-light);
+}
+
+/* QUICK STATS */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+}
+
+.quick-stat {
+    background: var(--card);
+    padding: 7px;
+    border-radius: 6px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+}
+
+.quick-stat:hover {
+    box-shadow: 0 4px 10px rgba(0, 102, 204, 0.2);
+    border-color: var(--primary-light);
+}
+
+.quick-stat .stat-label {
+    font-size: 0.65rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.quick-stat .stat-value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+@media (max-width: 1400px) {
+    .widgets-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: auto;
+    }
+}

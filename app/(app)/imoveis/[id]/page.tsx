@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import Link from 'next/link'
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -333,25 +334,25 @@ export default async function ImovelDetailPage({
   const { id } = await params
   const query = await searchParams
   const clientId = firstParam(query?.clientId)
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listing } = await (supabase.from('listings') as any)
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single() as { data: ListingRow | null }
 
   if (!listing) notFound()
 
-  const locationInsight = await getListingLocationInsightByListingId(supabase, user.id, id)
-  const scoreRows = await getScoreHistory(supabase, user.id, id)
+  const locationInsight = await getListingLocationInsightByListingId(supabase, userId, id)
+  const scoreRows = await getScoreHistory(supabase, userId, id)
   const scoreEntries = scoreRows.map(scoreRowToCardEntry)
-  const strategyFitRows = await getStrategyFitScores(supabase, user.id, id)
-  const investorMatches = await loadPersistedMatchesForListing(supabase, user.id, id)
-  const aiSummaryRow = await loadAiDealSummary(supabase, user.id, id)
+  const strategyFitRows = await getStrategyFitScores(supabase, userId, id)
+  const investorMatches = await loadPersistedMatchesForListing(supabase, userId, id)
+  const aiSummaryRow = await loadAiDealSummary(supabase, userId, id)
   const aiSummary = getAiSummaryJson(aiSummaryRow)
   const clientContext = clientId
     ? await (async () => {
@@ -359,7 +360,7 @@ export default async function ImovelDetailPage({
       const { data: client } = await (supabase.from('investors') as any)
         .select('id, name')
         .eq('id', clientId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle() as { data: InvestorRow | null }
 
       if (!client) return null
@@ -367,7 +368,7 @@ export default async function ImovelDetailPage({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: clientOpportunity } = await (supabase.from('client_opportunities') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('client_id', client.id)
         .eq('opportunity_id', id)
         .maybeSingle() as { data: ClientOpportunityRow | null }

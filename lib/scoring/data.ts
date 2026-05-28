@@ -6,10 +6,7 @@ import type { StrategyFitScoreResult } from './strategy-fit'
 
 type OpportunityScoreRow = Database['public']['Tables']['opportunity_scores']['Row']
 type StrategyFitScoreRow = Database['public']['Tables']['strategy_fit_scores']['Row']
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 export async function upsertScore(
   supabase: SupabaseLike,

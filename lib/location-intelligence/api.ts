@@ -15,10 +15,7 @@ import {
 } from '@/lib/location-intelligence/insights'
 import { resolveLocationIntelligence } from '@/lib/location-intelligence/providers'
 
-type SupabaseLike = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (relation: string) => any
-}
+import type { SupabaseLike } from '@/lib/supabase/types'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
 

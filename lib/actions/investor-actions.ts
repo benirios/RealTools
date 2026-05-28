@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { InvestorSchema, type InvestorState } from '@/lib/schemas/investor'
 import { createInvestor, deleteInvestor, DEMO_INVESTORS, updateInvestor } from '@/lib/investors/data'
 import { recalculateAllMatches, recalculateMatchesForInvestor } from '@/lib/investors/match-processing'
@@ -38,18 +39,18 @@ export async function createInvestorAction(
   _prevState: InvestorState,
   formData: FormData
 ): Promise<InvestorState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const parsed = parseInvestorForm(formData)
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors }
 
-  const { data, error } = await createInvestor(supabase, user.id, parsed.data)
+  const supabase = createSupabaseServiceClient()
+  const { data, error } = await createInvestor(supabase, userId, parsed.data)
   if (error) return { errors: { general: ['Não foi possível salvar o investidor. Tente novamente.'] } }
 
   if (data?.id) {
-    await recalculateMatchesForInvestor(supabase, user.id, data.id)
+    await recalculateMatchesForInvestor(supabase, userId, data.id)
   }
 
   revalidatePath('/investors')
@@ -60,9 +61,8 @@ export async function updateInvestorAction(
   _prevState: InvestorState,
   formData: FormData
 ): Promise<InvestorState> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
   const investorId = String(formData.get('investorId') ?? '')
   if (!investorId) return { errors: { general: ['ID do investidor ausente.'] } }
@@ -70,10 +70,11 @@ export async function updateInvestorAction(
   const parsed = parseInvestorForm(formData)
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors }
 
-  const { error } = await updateInvestor(supabase, user.id, investorId, parsed.data)
+  const supabase = createSupabaseServiceClient()
+  const { error } = await updateInvestor(supabase, userId, investorId, parsed.data)
   if (error) return { errors: { general: ['Não foi possível salvar o investidor. Tente novamente.'] } }
 
-  await recalculateMatchesForInvestor(supabase, user.id, investorId, true)
+  await recalculateMatchesForInvestor(supabase, userId, investorId, true)
 
   revalidatePath('/investors')
   revalidatePath(`/investors/${investorId}`)
@@ -81,11 +82,11 @@ export async function updateInvestorAction(
 }
 
 export async function deleteInvestorAction(investorId: string): Promise<{ error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const { error } = await deleteInvestor(supabase, user.id, investorId)
+  const supabase = createSupabaseServiceClient()
+  const { error } = await deleteInvestor(supabase, userId, investorId)
   if (error) return { error: 'Não foi possível excluir o investidor. Tente novamente.' }
 
   revalidatePath('/investors')
@@ -93,18 +94,18 @@ export async function deleteInvestorAction(investorId: string): Promise<{ error?
 }
 
 export async function seedDemoInvestorsAction(): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   let saved = 0
   for (const investor of DEMO_INVESTORS) {
-    const { error } = await createInvestor(supabase, user.id, investor)
+    const { error } = await createInvestor(supabase, userId, investor)
     if (!error) saved += 1
   }
 
   if (saved > 0) {
-    await recalculateAllMatches(supabase, user.id, true)
+    await recalculateAllMatches(supabase, userId, true)
   }
 
   revalidatePath('/investors')
@@ -115,11 +116,11 @@ export async function seedDemoInvestorsAction(): Promise<{ ok: boolean; message:
 }
 
 export async function recalculateInvestorMatchesAction(investorId: string): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await recalculateMatchesForInvestor(supabase, user.id, investorId, true)
+  const supabase = createSupabaseServiceClient()
+  const result = await recalculateMatchesForInvestor(supabase, userId, investorId, true)
 
   revalidatePath('/investors')
   revalidatePath(`/investors/${investorId}`)
@@ -130,11 +131,11 @@ export async function recalculateInvestorMatchesAction(investorId: string): Prom
 }
 
 export async function recalculateAllMatchesAction(): Promise<{ ok: boolean; message: string }> {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
-  const result = await recalculateAllMatches(supabase, user.id, true)
+  const supabase = createSupabaseServiceClient()
+  const result = await recalculateAllMatches(supabase, userId, true)
 
   revalidatePath('/investors')
   revalidatePath('/imoveis')

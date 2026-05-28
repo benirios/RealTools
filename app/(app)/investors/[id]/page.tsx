@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { ArrowUpRight, Clock, FileText, KanbanSquare, MapPin, Send, Star, Target } from 'lucide-react'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { InvestorFormModal } from '@/components/investors/investor-form-modal'
@@ -219,7 +220,7 @@ function defaultSearchTerm(client: InvestorRow) {
 }
 
 async function loadClientOpportunityRows(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
   userId: string,
   clientId: string
 ) {
@@ -234,7 +235,7 @@ async function loadClientOpportunityRows(
 }
 
 async function loadSummaries(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
   userId: string,
   listingIds: string[]
 ) {
@@ -258,7 +259,7 @@ async function loadSummaries(
 }
 
 async function buildPipelineItems(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
   userId: string,
   clientRows: ClientOpportunityRow[],
   matches: PersistedInvestorMatch[]
@@ -726,27 +727,27 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   const query = await searchParams
   const tab = normalizeTab(query?.tab)
   const selectedOpportunityId = firstParam(query?.opportunity)
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: client } = await (supabase.from('investors') as any)
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single() as { data: InvestorRow | null }
 
   if (!client) notFound()
 
-  const matches = await loadPersistedMatchesForInvestor(supabase, user.id, client.id, 100)
-  const clientRows = await loadClientOpportunityRows(supabase, user.id, client.id)
-  const pipelineItems = await buildPipelineItems(supabase, user.id, clientRows, matches)
+  const matches = await loadPersistedMatchesForInvestor(supabase, userId, client.id, 100)
+  const clientRows = await loadClientOpportunityRows(supabase, userId, client.id)
+  const pipelineItems = await buildPipelineItems(supabase, userId, clientRows, matches)
   const summaryListingIds = Array.from(new Set([
     ...matches.map((match) => match.listing_id),
     ...pipelineItems.map((item) => item.deal.id),
   ]))
-  const summaries = await loadSummaries(supabase, user.id, summaryListingIds)
+  const summaries = await loadSummaries(supabase, userId, summaryListingIds)
 
   return (
     <div className="space-y-6">

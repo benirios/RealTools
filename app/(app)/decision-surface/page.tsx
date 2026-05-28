@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
 import { getAiSummaryJson } from '@/lib/ai/deal-summary-service'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
 import type { Database, Json } from '@/types/supabase'
 
@@ -133,14 +134,14 @@ function buildLastProcessed(listing: ListingRow, score: ScoreRow | null, summary
 }
 
 export default async function DecisionSurfacePage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listingData, error: listingError } = await (supabase.from('listings') as any)
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false }) as { data: ListingRow[] | null; error: LoadError }
 
   if (listingError) {
@@ -166,25 +167,25 @@ export default async function DecisionSurfacePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('opportunity_scores') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('listing_id', listingIds)
         .order('total_score', { ascending: false }) as Promise<{ data: ScoreRow[] | null }>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('location_insights') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('listing_id', listingIds)
         .order('updated_at', { ascending: false }) as Promise<{ data: LocationInsightRow[] | null }>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('investor_listing_matches') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('listing_id', listingIds)
         .order('match_score', { ascending: false }) as Promise<{ data: MatchRow[] | null }>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('listing_ai_summaries') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('listing_id', listingIds)
         .order('updated_at', { ascending: false }) as Promise<{ data: AiSummaryRow[] | null }>,
     ])
@@ -199,7 +200,7 @@ export default async function DecisionSurfacePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('investors') as any)
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('id', investorIds) as { data: InvestorRow[] | null }
       investors = data ?? []
     }

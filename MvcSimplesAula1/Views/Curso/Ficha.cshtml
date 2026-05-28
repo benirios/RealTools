@@ -1,0 +1,13 @@
+@{
+    ViewData["Title"] = "Ficha";
+    var idade = (int)ViewData["Idade"]!;
+}
+
+<h1>Ficha de Aluno</h1>
+<p><strong>Nome:</strong> @ViewData["Nome"]</p>
+<p><strong>Idade:</strong> @idade</p>
+
+@if (idade < 18)
+{
+    <p><em>Menor de idade.</em></p>
+}

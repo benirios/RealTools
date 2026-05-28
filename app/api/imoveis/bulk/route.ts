@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { createSupabaseServiceClient } from '@/lib/supabase/service'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function DELETE(request: Request) {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   let body: unknown
   try {
@@ -26,11 +26,12 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Máximo de 500 imóveis por operação' }, { status: 400 })
   }
 
+  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error, count } = await (supabase.from('listings') as any)
     .delete({ count: 'exact' })
     .in('id', ids)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) {
     return NextResponse.json({ error: 'Falha ao excluir imóveis' }, { status: 500 })

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InfoLoRa – Painel Escolar</title>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'Fira Sans', system-ui, sans-serif; }
+    .cal-cell { min-height: 46px; }
+    .cal-normal   { background: #C7DCF5; }
+    .cal-weekend  { background: #E0EDFA; }
+    .cal-event    { background: #FDD8A0; }
+    .cal-vacation { background: #D1FAE5; }
+    .cal-today    { background: #2358A8 !important; }
+  </style>
+</head>
+<body class="h-screen overflow-hidden flex" style="background:#EEF2F7;">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+  <aside class="shrink-0 w-52 flex flex-col" style="background:#1B3A6B;">
+    <!-- Logo placeholder -->
+    <div class="px-5 pt-5 pb-3">
+      <span class="text-white font-bold text-base tracking-tight">InFoLoRa</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 pt-1 space-y-1">
+      <a href="#" class="flex items-center px-4 py-2.5 rounded-lg text-white text-sm font-semibold cursor-pointer transition-colors duration-200" style="background:#2358A8;">
+        Informações
+      </a>
+      <a href="#" class="flex items-center px-4 py-2.5 rounded-lg text-blue-200 text-sm font-medium cursor-pointer transition-colors duration-200 hover:bg-white/10">
+        Sobre o Projeto
+      </a>
+    </nav>
+
+    <!-- Footer -->
+    <div class="px-5 py-4 border-t border-white/10">
+      <p class="text-blue-300 text-[11px]">Tens alguma questão...</p>
+      <p class="text-blue-300 text-[11px] mt-1">Email: <span class="text-blue-200">infolora@aepombal.edu.pt</span></p>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════ -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Header -->
+    <header class="shrink-0 flex items-center justify-between px-6 py-2.5">
+      <p class="text-xs text-gray-400 tracking-wide">Painel de Informações</p>
+      <!-- Right logo placeholder (added later) -->
+      <div class="h-8 w-48"></div>
+    </header>
+
+    <!-- 3-column grid -->
+    <div class="flex-1 min-h-0 grid gap-3 px-5 pb-4" style="grid-template-columns:2.2fr 2.8fr 1.6fr;">
+
+      <!-- ── COL 1 : Calendar + Ementa ──────────────────────── -->
+      <div class="flex flex-col gap-3 min-h-0 overflow-hidden">
+
+        <!-- Calendar card -->
+        <div class="bg-white rounded-2xl px-5 py-4 flex flex-col flex-1 min-h-0 overflow-hidden" style="box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <h2 class="text-base font-bold text-gray-800 mb-1">Eventos</h2>
+          <p class="text-sm font-bold mb-3" style="color:#1B3A6B;" id="cal-month-header">Maio 2026</p>
+
+          <!-- Weekday headers -->
+          <div class="grid grid-cols-7 mb-1" id="cal-weekdays"></div>
+          <!-- Days -->
+          <div class="grid grid-cols-7 gap-1 flex-1 content-start" id="cal-grid"></div>
+
+          <!-- Legend + Dates -->
+          <div class="mt-3 pt-3 border-t border-gray-100 flex gap-5 shrink-0">
+            <div class="flex flex-col gap-1.5">
+              <span class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#FDD8A0;"></span>Eventos Escolares
+              </span>
+              <span class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#C7DCF5;"></span>Aulas normais
+              </span>
+              <span class="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#D1FAE5;"></span>Feriados
+              </span>
+            </div>
+            <div class="flex-1">
+              <p class="text-[10px] font-bold text-gray-600 mb-1.5 tracking-wide uppercase">Datas</p>
+              <div id="cal-dates-list" class="space-y-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ementa card -->
+        <div class="bg-white rounded-2xl px-5 py-4 shrink-0" style="box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <h2 class="text-sm font-bold text-gray-800 mb-2">Ementa</h2>
+          <div id="ementa-list" class="space-y-1.5"></div>
+        </div>
+      </div>
+
+      <!-- ── COL 2 : Exterior + Interior + Meteorologia ─────── -->
+      <div class="flex flex-col gap-2.5 min-h-0 overflow-hidden">
+
+        <!-- Section titles -->
+        <div class="grid grid-cols-2 gap-2">
+          <p class="text-sm font-bold text-gray-700 px-1">Exterior</p>
+          <p class="text-sm font-bold text-gray-700 px-1">Interior</p>
+        </div>
+
+        <!-- Sensor 2×3 grid -->
+        <div class="grid grid-cols-2 gap-2 shrink-0">
+
+          <!-- Ext: AQI -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Qualidade do ar</span>
+              <span class="text-[11px] font-semibold text-green-600" id="ext-aqi-badge">+ —</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="ext-aqi-val">— IQA</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 20 Q12 14 20 17 Q30 20 38 10 Q46 2 54 6 Q58 8 60 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Int: AQI -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Qualidade do ar</span>
+              <span class="text-[11px] font-semibold text-green-600" id="int-aqi-badge">+ —</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="int-aqi-val">— IQA</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 20 Q12 14 20 17 Q30 20 38 10 Q46 2 54 6 Q58 8 60 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Ext: Humidity -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Humidade Exterior</span>
+              <span class="text-[11px] font-semibold text-red-500" id="ext-hum-badge">- —%</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="ext-hum-val">—%</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 6 Q12 10 20 8 Q30 6 38 16 Q46 24 54 20 Q58 18 60 22" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Int: Temperature -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Temperatura interior</span>
+              <span class="text-[11px] font-semibold text-blue-600" id="int-temp-badge">+ —°C</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="int-temp-val">—°C</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 18 Q12 14 20 16 Q30 18 38 11 Q46 4 54 8 Q58 10 60 7" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Ext: Precipitation -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Precipitação</span>
+              <span class="text-[11px] font-semibold text-blue-600" id="ext-precip-badge">— mm</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="ext-precip-val">—</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 18 Q12 14 20 16 Q30 18 38 11 Q46 4 54 8 Q58 10 60 7" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Int: Humidity -->
+          <div class="bg-white rounded-xl px-3 py-2.5" style="box-shadow:0 1px 3px rgba(0,0,0,.07);">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] text-gray-400">Humidade interior</span>
+              <span class="text-[11px] font-semibold text-red-500" id="int-hum-badge">- —%</span>
+            </div>
+            <div class="flex items-end justify-between">
+              <span class="text-lg font-bold text-gray-800 font-mono" id="int-hum-val">—%</span>
+              <svg width="62" height="26" viewBox="0 0 62 26" fill="none"><path d="M2 6 Q12 10 20 8 Q30 6 38 16 Q46 24 54 20 Q58 18 60 22" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meteorologia -->
+        <div class="bg-white rounded-2xl px-4 py-3 flex-1 min-h-0" style="box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <h2 class="text-sm font-bold text-gray-800 mb-0.5">Meteorologia</h2>
+          <p class="text-[10px] text-gray-400 mb-3">Hourly forecast</p>
+          <div class="flex items-center justify-around" id="hourly-forecast"></div>
+        </div>
+      </div>
+
+      <!-- ── COL 3 : Vento ─────────────────────────────────── -->
+      <div class="flex flex-col gap-2.5 min-h-0">
+        <p class="text-sm font-bold text-gray-700 px-1">Vento</p>
+
+        <!-- Compass card -->
+        <div class="bg-white rounded-2xl p-4 flex-1 flex items-center justify-center" style="box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <svg id="compass-svg" viewBox="0 0 200 200" class="w-full max-w-[190px]">
+            <circle cx="100" cy="100" r="88" stroke="#E2E8F0" stroke-width="1" fill="none"/>
+            <circle cx="100" cy="100" r="64" stroke="#E2E8F0" stroke-width="1" fill="none"/>
+            <line x1="100" y1="16" x2="100" y2="184" stroke="#CBD5E1" stroke-width="0.75"/>
+            <line x1="16"  y1="100" x2="184" y2="100" stroke="#CBD5E1" stroke-width="0.75"/>
+            <line x1="38"  y1="38"  x2="162" y2="162" stroke="#E2E8F0" stroke-width="0.5"/>
+            <line x1="162" y1="38"  x2="38"  y2="162" stroke="#E2E8F0" stroke-width="0.5"/>
+            <!-- Cardinal labels -->
+            <text x="100" y="11"  text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B" font-family="Fira Sans,sans-serif">N</text>
+            <text x="100" y="197" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B" font-family="Fira Sans,sans-serif">S</text>
+            <text x="196" y="104" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B" font-family="Fira Sans,sans-serif">E</text>
+            <text x="4"   y="104" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B" font-family="Fira Sans,sans-serif">W</text>
+            <!-- Needle (rotated by JS) -->
+            <g id="compass-needle">
+              <polygon points="100,30 95,100 105,100" fill="#1E293B"/>
+              <polygon points="100,170 95,100 105,100" fill="#94A3B8"/>
+              <circle cx="100" cy="100" r="5" fill="#475569"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Wind info card -->
+        <div class="bg-white rounded-xl px-4 py-3 shrink-0" style="box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400">Direção</span>
+            <span class="text-xs font-bold text-gray-800 font-mono" id="wind-dir-text">—</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400">Velocidade do Vento</span>
+            <span class="text-xs font-bold text-gray-800 font-mono" id="wind-spd-text">— km/h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="shrink-0 flex items-center justify-center gap-8 py-1.5 border-t border-gray-200/50">
+      <span class="text-[10px] text-gray-300">Pessoas 2030</span>
+      <span class="text-[10px] text-gray-300">2030</span>
+      <span class="text-[10px] text-gray-300">Co-financiado pela União Europeia</span>
+    </footer>
+  </div>
+
+  <script>
+    // ── Constants ───────────────────────────────────────────
+    const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const WD = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+
+    const EVENTS = [
+      { date: '2026-05-01', type: 'holiday', label: 'Dia do Trabalhador' },
+      { date: '2026-05-13', type: 'school',  label: 'Reunião Pais e Mestres' },
+      { date: '2026-05-15', type: 'school',  label: 'BOTpombal' },
+      { date: '2026-05-20', type: 'school',  label: 'Dia do Professor' },
+      { date: '2026-05-21', type: 'school',  label: 'Revisão Curricular' },
+      { date: '2026-05-25', type: 'vacation', label: 'Recesso de Inverno' },
+      { date: '2026-05-26', type: 'vacation', label: 'Recesso de Inverno' },
+      { date: '2026-05-27', type: 'vacation', label: 'Recesso de Inverno' },
+      { date: '2026-05-28', type: 'vacation', label: 'Recesso de Inverno' },
+      { date: '2026-05-29', type: 'vacation', label: 'Recesso de Inverno' },
+      { date: '2026-06-03', type: 'school',  label: 'Reunião de Professores' },
+      { date: '2026-06-12', type: 'holiday', label: 'Dia dos Namorados' },
+    ];
+
+    const MENU = [
+      { dayNum: 1, abbr: 'Seg', main: 'Arroz, ensopado de carne, salada',       sub: 'Suco de laranja · Fruta'  },
+      { dayNum: 2, abbr: 'Ter', main: 'Frango grelhado, arroz, salada',          sub: 'Limonada · Banana'        },
+      { dayNum: 3, abbr: 'Qua', main: 'Macarrão ao molho de tomate, pão',        sub: 'Suco tropical · Melão'    },
+      { dayNum: 4, abbr: 'Qui', main: 'Sopa de legumes, broa de milho, queijo',  sub: 'Suco de goiaba · Maçã'   },
+      { dayNum: 5, abbr: 'Sex', main: 'Peixe assado, purê de batata, verduras',  sub: 'Água de coco · Mamão'    },
+    ];
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    // ── Ementa ──────────────────────────────────────────────
+    (function buildEmenta() {
+      const todayDow = new Date().getDay(); // 0=Sun
+      const container = document.getElementById('ementa-list');
+      MENU.forEach(item => {
+        const isToday = item.dayNum === todayDow;
+        const row = document.createElement('div');
+        row.className = 'flex items-start gap-2 px-2 py-1 rounded-lg text-xs ' + (isToday ? 'bg-blue-50' : '');
+        row.innerHTML =
+          '<span class="font-semibold w-6 shrink-0 ' + (isToday ? 'text-blue-600' : 'text-gray-300') + '">' + item.abbr + '</span>' +
+          '<div class="flex-1 min-w-0">' +
+            '<p class="' + (isToday ? 'text-gray-800 font-medium' : 'text-gray-500') + ' truncate">' + item.main + '</p>' +
+            '<p class="text-gray-400 truncate">' + item.sub + '</p>' +
+          '</div>' +
+          (isToday ? '<span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest shrink-0 mt-0.5">Hoje</span>' : '');
+        container.appendChild(row);
+      });
+    })();
+
+    // ── Calendar ────────────────────────────────────────────
+    (function buildCalendar() {
+      const now   = new Date();
+      const year  = now.getFullYear();
+      const month = now.getMonth();
+      const today = now.getDate();
+
+      document.getElementById('cal-month-header').textContent = MONTHS[month] + ' ' + year;
+
+      // Weekday headers – Monday first
+      const wdEl = document.getElementById('cal-weekdays');
+      WD.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'text-center text-[8px] font-semibold text-gray-400 uppercase tracking-wide pb-1.5';
+        el.textContent = d.slice(0,3);
+        wdEl.appendChild(el);
+      });
+
+      // Event map
+      const evMap = {};
+      EVENTS.forEach(e => {
+        if (!evMap[e.date]) evMap[e.date] = [];
+        evMap[e.date].push(e);
+      });
+
+      const firstDay    = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const grid        = document.getElementById('cal-grid');
+
+      for (let i = 0; i < firstDay; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-cell flex items-start justify-center pt-1 text-[10px] text-gray-300';
+        el.textContent = '-';
+        grid.appendChild(el);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr  = year + '-' + pad(month + 1) + '-' + pad(d);
+        const isToday  = d === today;
+        const dow      = new Date(year, month, d).getDay(); // 0=Sun,6=Sat
+        const isWknd   = dow === 0 || dow === 6;
+        const evs      = evMap[dateStr] || [];
+        const hasHol   = evs.some(e => e.type === 'holiday');
+        const hasSch   = evs.some(e => e.type === 'school');
+        const hasVac   = evs.some(e => e.type === 'vacation');
+        const topEv    = evs.find(e => e.type !== 'vacation') || evs[0];
+
+        let bgCls = isWknd ? 'cal-weekend' : 'cal-normal';
+        let txtCls = isWknd ? 'text-blue-400' : 'text-blue-800';
+        let lbl = '';
+
+        if (hasHol || hasSch) { bgCls = 'cal-event'; txtCls = 'text-orange-800'; lbl = topEv.label; }
+        if (hasVac && !hasHol && !hasSch) { bgCls = 'cal-vacation'; txtCls = 'text-green-800'; }
+        if (isToday) { bgCls = 'cal-today'; txtCls = 'text-white'; }
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell rounded-lg flex flex-col items-center justify-start pt-1 px-0.5 ' + bgCls;
+        cell.innerHTML =
+          '<span class="text-[11px] font-semibold leading-none ' + txtCls + '">' + d + '</span>' +
+          (lbl
+            ? '<span class="text-[6.5px] leading-tight text-center mt-0.5 px-0.5 break-all w-full ' + (isToday ? 'text-white/80' : txtCls + '/70') + '">' + lbl + '</span>'
+            : isWknd && !isToday
+              ? '<span class="text-[6.5px] leading-tight text-center mt-0.5 text-blue-300">Fim de<br>semana</span>'
+              : '');
+        grid.appendChild(cell);
+      }
+    })();
+
+    // ── Dates list ──────────────────────────────────────────
+    (function buildDates() {
+      const now  = new Date();
+      const tStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+      const seen = new Set();
+      const list = EVENTS
+        .filter(e => e.date >= tStr && e.type !== 'vacation')
+        .filter(e => { const k = e.label; if (seen.has(k)) return false; seen.add(k); return true; })
+        .slice(0, 5);
+      const el = document.getElementById('cal-dates-list');
+      list.forEach(e => {
+        const d = new Date(e.date + 'T12:00:00');
+        const ds = pad(d.getDate()) + '/' + pad(d.getMonth()+1);
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-1.5';
+        row.innerHTML = '<span class="text-[10px] text-gray-400 font-mono">' + ds + '</span>' +
+                        '<span class="text-[10px] text-gray-600">- ' + e.label + '</span>';
+        el.appendChild(row);
+      });
+    })();
+
+    // ── Weather API ─────────────────────────────────────────
+    const LAT = 39.9167, LON = -8.6333, TZ = 'Europe%2FLisbon';
+
+    function toCompass(deg) {
+      const d = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return d[Math.round(deg / 22.5) % 16];
+    }
+
+    function weatherSVG(code) {
+      if (code === 0) return (
+        '<svg viewBox="0 0 28 28" width="32" height="32" fill="none">' +
+        '<circle cx="14" cy="14" r="5.5" fill="#F59E0B"/>' +
+        '<line x1="14" y1="2"  x2="14" y2="6"  stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="14" y1="22" x2="14" y2="26" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="2"  y1="14" x2="6"  y2="14" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="22" y1="14" x2="26" y2="14" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="5.37" y1="5.37" x2="8.2"  y2="8.2"  stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="19.8" y1="19.8" x2="22.6" y2="22.6" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="22.6" y1="5.37" x2="19.8" y2="8.2"  stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '<line x1="8.2"  y1="19.8" x2="5.37" y2="22.6" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>' +
+        '</svg>'
+      );
+      if (code <= 3) return (
+        '<svg viewBox="0 0 28 28" width="32" height="32" fill="none">' +
+        '<circle cx="10" cy="14" r="4" fill="#FBBF24"/>' +
+        '<line x1="10" y1="7" x2="10" y2="9" stroke="#FBBF24" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<line x1="4"  y1="10" x2="5.5" y2="11" stroke="#FBBF24" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<path d="M19 20H12a4 4 0 0 1 0-8 3.5 3.5 0 0 1 6.95.75A3.5 3.5 0 0 1 19 20z" fill="#94A3B8"/>' +
+        '</svg>'
+      );
+      if (code >= 51 && code <= 82) return (
+        '<svg viewBox="0 0 28 28" width="32" height="32" fill="none">' +
+        '<path d="M20 13H10a4.5 4.5 0 0 1 0-9 4 4 0 0 1 7.95.75A4.5 4.5 0 0 1 20 13z" fill="#94A3B8"/>' +
+        '<line x1="10" y1="17" x2="9"  y2="21" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<line x1="14" y1="16" x2="13" y2="20" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<line x1="18" y1="17" x2="17" y2="21" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round"/>' +
+        '</svg>'
+      );
+      return (
+        '<svg viewBox="0 0 28 28" width="32" height="32" fill="none">' +
+        '<path d="M20 20H8a5.5 5.5 0 0 1 0-11 5 5 0 0 1 9.95.75A5.5 5.5 0 0 1 20 20z" fill="#94A3B8"/>' +
+        '</svg>'
+      );
+    }
+
+    async function fetchWeather() {
+      try {
+        const [wRes, aRes] = await Promise.all([
+          fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON +
+                '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m' +
+                '&hourly=temperature_2m,weather_code&timezone=' + TZ + '&forecast_days=1'),
+          fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + LAT + '&longitude=' + LON +
+                '&current=european_aqi,pm2_5&timezone=' + TZ)
+        ]);
+
+        if (wRes.ok) {
+          const w   = await wRes.json();
+          const cur = w.current;
+          const temp    = Math.round(cur.temperature_2m);
+          const hum     = Math.round(cur.relative_humidity_2m);
+          const precip  = (cur.precipitation || 0).toFixed(1);
+          const wSpd    = Math.round(cur.wind_speed_10m);
+          const wDir    = Math.round(cur.wind_direction_10m);
+          const intTemp = temp + 2;
+          const intHum  = Math.round(hum * 0.85);
+
+          document.getElementById('ext-hum-val').textContent    = hum + '%';
+          document.getElementById('ext-hum-badge').textContent  = (hum > 70 ? '+ ' : '- ') + Math.abs(hum - 65) + '%';
+          document.getElementById('ext-precip-val').textContent  = precip + ' mm';
+          document.getElementById('ext-precip-badge').textContent = precip > 0 ? '+ ' + precip + 'mm' : '0.0 mm';
+
+          document.getElementById('int-temp-val').textContent   = intTemp + '°C';
+          document.getElementById('int-temp-badge').textContent = '+2°C';
+          document.getElementById('int-hum-val').textContent    = intHum + '%';
+          document.getElementById('int-hum-badge').textContent  = '- ' + Math.abs(hum - intHum) + '%';
+
+          document.getElementById('wind-dir-text').textContent  = toCompass(wDir);
+          document.getElementById('wind-spd-text').textContent  = wSpd + ' km/h';
+          document.getElementById('compass-needle').setAttribute('transform', 'rotate(' + wDir + ',100,100)');
+
+          // Hourly forecast – 6 slots from current hour
+          const now      = new Date();
+          const curHour  = now.getHours();
+          const hours    = w.hourly.time;
+          const hTemps   = w.hourly.temperature_2m;
+          const hCodes   = w.hourly.weather_code;
+          let startIdx   = hours.findIndex(t => new Date(t).getHours() === curHour);
+          if (startIdx < 0) startIdx = curHour;
+
+          const fcEl = document.getElementById('hourly-forecast');
+          fcEl.innerHTML = '';
+          for (let i = 0; i < 6; i++) {
+            const idx = startIdx + i;
+            if (idx >= hours.length) break;
+            const hLabel = i === 0 ? 'Agora' : pad(new Date(hours[idx]).getHours()) + 'H';
+            const hTemp  = hTemps[idx] != null ? Math.round(hTemps[idx]) : '--';
+            const slot   = document.createElement('div');
+            slot.className = 'flex flex-col items-center gap-1';
+            slot.innerHTML =
+              '<span class="text-[10px] text-gray-400 font-medium">' + hLabel + '</span>' +
+              weatherSVG(hCodes[idx] || 0) +
+              '<span class="text-sm font-bold text-gray-700 font-mono">' + hTemp + '°</span>';
+            fcEl.appendChild(slot);
+          }
+        }
+
+        if (aRes.ok) {
+          const a   = await aRes.json();
+          const aqi = Math.round(a.current.european_aqi);
+          const lbl = aqi <= 20 ? '+ Ótima' : aqi <= 40 ? '+ Boa' : aqi <= 60 ? '~ Mod.' : '- Ruim';
+          const cls = aqi <= 20 ? 'text-green-600' : aqi <= 40 ? 'text-green-600' : aqi <= 60 ? 'text-yellow-600' : 'text-red-500';
+
+          ['ext-aqi-val','int-aqi-val'].forEach(id => {
+            document.getElementById(id).textContent = aqi + ' IQA';
+          });
+          ['ext-aqi-badge','int-aqi-badge'].forEach(id => {
+            const el = document.getElementById(id);
+            el.textContent  = lbl;
+            el.className    = 'text-[11px] font-semibold ' + cls;
+          });
+        }
+
+      } catch(e) { console.error(e); }
+    }
+
+    fetchWeather();
+    setInterval(fetchWeather, 10 * 60 * 1000);
+  </script>
+</body>
+</html>

@@ -29,7 +29,7 @@ export const LocationInsightInputSchema = z.object({
 
 export const LocationInsightPersistedSchema = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid(),
+  userId: z.string().min(1),
   listingId: z.string().uuid().nullable().optional(),
   address: z.string().nullable().optional(),
   neighborhood: z.string().nullable().optional(),
