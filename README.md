@@ -13,7 +13,7 @@ Solves deal rot — the dropped balls, missed follow-ups, and scattered data tha
 
 ---
 
-![RealTools App Preview](public/app-preview.png)
+![RealTools UI](UI.png)
 
 ---
 
