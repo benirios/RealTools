@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { ArrowUpRight, Clock, FileText, KanbanSquare, MapPin, Send, Star, Target } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
+import { PageContent } from '@/components/page-content'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { InvestorFormModal } from '@/components/investors/investor-form-modal'
@@ -750,6 +751,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   const summaries = await loadSummaries(supabase, userId, summaryListingIds)
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div>
         <Button asChild variant="ghost" size="sm" className="-ml-3 mb-2">
@@ -809,5 +811,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
         <span>oportunidades continuam globais</span>
       </div>
     </div>
+    </PageContent>
   )
 }

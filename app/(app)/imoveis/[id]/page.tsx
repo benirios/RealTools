@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
+import { PageContent } from '@/components/page-content'
 import Link from 'next/link'
 import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -153,6 +154,7 @@ function ClientOpportunityRecommendationView({
   const recommendedAction = clientMatch?.recommended_action || aiSummary?.recommended_action || 'Decida o próximo estágio deste cliente no pipeline.'
 
   return (
+    <PageContent>
     <div className="mx-auto w-full max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -321,6 +323,7 @@ function ClientOpportunityRecommendationView({
         </div>
       </details>
     </div>
+    </PageContent>
   )
 }
 
@@ -410,6 +413,7 @@ export default async function ImovelDetailPage({
   }
 
   return (
+    <PageContent>
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <Link
         href="/imoveis"
@@ -548,5 +552,6 @@ export default async function ImovelDetailPage({
 
       <ListingInvestorMatches matches={investorMatches} />
     </div>
+    </PageContent>
   )
 }

@@ -1,5 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { PageContent } from '@/components/page-content'
 
 export default async function ProfilePage() {
   const { userId } = await auth()
@@ -8,6 +9,7 @@ export default async function ProfilePage() {
   const user = await currentUser()
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold leading-tight text-foreground">
@@ -35,5 +37,6 @@ export default async function ProfilePage() {
         </div>
       </div>
     </div>
+    </PageContent>
   )
 }

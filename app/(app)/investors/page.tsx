@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
+import { PageContent } from '@/components/page-content'
 import { InvestorFormModal } from '@/components/investors/investor-form-modal'
 import { InvestorsTable } from '@/components/investors/investors-table'
 import { RecalculateAllMatchesButton, SeedDemoInvestorsButton } from '@/components/investors/investor-actions'
@@ -20,6 +21,7 @@ export default async function InvestorsPage() {
     .order('created_at', { ascending: false }) as { data: InvestorRow[] | null }
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -37,5 +39,6 @@ export default async function InvestorsPage() {
 
       <InvestorsTable investors={investors ?? []} />
     </div>
+    </PageContent>
   )
 }

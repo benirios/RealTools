@@ -7,6 +7,7 @@ import { ReenrichImportRunButton } from '@/components/listings/import-actions'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import type { Json } from '@/types/supabase'
+import { PageContent } from '@/components/page-content'
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -108,6 +109,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
   const savedCount = (run.created_count ?? 0) + (run.updated_count ?? 0)
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -209,5 +211,6 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
         </div>
       )}
     </div>
+    </PageContent>
   )
 }

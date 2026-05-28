@@ -2,52 +2,46 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Building2, MapPinned, Search, Target, User, UserRoundSearch } from 'lucide-react'
+import { Building2, MapPinned, Search, Target, UserRoundSearch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const navItems = [
-  { href: '/decision-surface', label: 'Decisão', icon: Target, matchPrefixes: ['/decision-surface'] },
-  { href: '/listings/import', label: 'Pesquisas', icon: Search, matchPrefixes: ['/listings'] },
-  { href: '/imoveis', label: 'Imóveis', icon: Building2, matchPrefixes: ['/imoveis'] },
-  { href: '/inteligencia-local', label: 'Inteligência local', icon: MapPinned, matchPrefixes: ['/inteligencia-local'] },
-  { href: '/investors', label: 'Clientes', icon: UserRoundSearch, matchPrefixes: ['/investors'] },
-  { href: '/profile', label: 'Perfil', icon: User, matchPrefixes: ['/profile'] },
-]
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  isActive,
+}: {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  isActive: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm transition-colors',
+        isActive
+          ? 'bg-accent text-foreground'
+          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className="flex-1 truncate">{label}</span>
+    </Link>
+  )
+}
 
 export function SidebarNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex-1 space-y-2 px-3 py-4 md:px-0 md:py-0">
-      {navItems.map(({ href, label, icon: Icon, matchPrefixes }) => {
-        const isActive = matchPrefixes.some(
-          (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-        )
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex min-h-12 items-center gap-3 rounded-md border px-2.5 text-sm font-medium transition-colors duration-200',
-              isActive
-                ? 'border-foreground bg-foreground text-background'
-                : 'border-transparent text-muted-foreground hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-            )}
-          >
-            <span
-              className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors',
-                isActive
-                  ? 'border-background bg-background text-foreground'
-                  : 'border-sidebar-border text-muted-foreground'
-              )}
-            >
-              <Icon className="size-4" />
-            </span>
-            <span>{label}</span>
-          </Link>
-        )
-      })}
+    <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
+      <NavItem href="/listings/import" label="Pesquisas" icon={Search} isActive={pathname.startsWith('/listings')} />
+      <NavItem href="/imoveis" label="Imóveis" icon={Building2} isActive={pathname.startsWith('/imoveis')} />
+      <NavItem href="/inteligencia-local" label="Intel. local" icon={MapPinned} isActive={pathname.startsWith('/inteligencia-local')} />
+      <NavItem href="/investors" label="Clientes" icon={UserRoundSearch} isActive={pathname.startsWith('/investors')} />
+      <NavItem href="/decision-surface" label="Decisão" icon={Target} isActive={pathname.startsWith('/decision-surface')} />
     </nav>
   )
 }

@@ -157,16 +157,12 @@ export function ImoveisGrid({ listings }: { listings: ListingSummary[] }) {
           return (
             <div
               key={listing.id}
-              className={`group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground ${isSelected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}
+              className={`group relative isolate flex flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground ${isSelected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}
             >
               {/* Checkbox overlay — top-left */}
               <div
                 className="absolute left-2 top-2 z-10"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  toggleSelect(listing.id)
-                }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Checkbox
                   checked={isSelected}

@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PageContent } from '@/components/page-content'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { StatusBadge } from '@/components/deals/deal-card'
 import { DealFormModal } from '@/components/deals/deal-form-modal'
@@ -77,6 +78,7 @@ export default async function DealHubPage({
   )
 
   return (
+    <PageContent>
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <section className="rounded-md border border-border bg-card p-4 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -149,5 +151,6 @@ export default async function DealHubPage({
         </div>
       </div>
     </div>
+    </PageContent>
   )
 }

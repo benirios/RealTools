@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import Link from 'next/link'
 import { Building2, Search, X } from 'lucide-react'
+import { PageContent } from '@/components/page-content'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -150,6 +151,7 @@ export default async function ImoveisPage({
   }))
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-medium leading-tight text-foreground">Imóveis</h1>
@@ -259,5 +261,6 @@ export default async function ImoveisPage({
         <ImoveisGrid listings={listings} />
       )}
     </div>
+    </PageContent>
   )
 }

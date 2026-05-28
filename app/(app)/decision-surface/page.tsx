@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
+import { PageContent } from '@/components/page-content'
 import { getAiSummaryJson } from '@/lib/ai/deal-summary-service'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
@@ -146,10 +147,12 @@ export default async function DecisionSurfacePage() {
 
   if (listingError) {
     return (
-      <DecisionSurface
-        opportunities={[]}
-        loadError={listingError.message ?? 'Não foi possível carregar os imóveis.'}
-      />
+      <PageContent>
+        <DecisionSurface
+          opportunities={[]}
+          loadError={listingError.message ?? 'Não foi possível carregar os imóveis.'}
+        />
+      </PageContent>
     )
   }
 
@@ -294,5 +297,9 @@ export default async function DecisionSurfacePage() {
     }
   })
 
-  return <DecisionSurface opportunities={opportunities} />
+  return (
+    <PageContent>
+      <DecisionSurface opportunities={opportunities} />
+    </PageContent>
+  )
 }

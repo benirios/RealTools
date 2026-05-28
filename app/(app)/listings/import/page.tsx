@@ -4,6 +4,7 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { ClearImportRunsButton, OlxSearchImportForm, SeedDefaultTargetsButton } from '@/components/listings/import-actions'
 import { ImportRunsTable, type ImportRun } from '@/components/listings/import-runs-table'
 import { ImportTargetsTable, type ImportTarget } from '@/components/listings/import-targets-table'
+import { PageContent } from '@/components/page-content'
 
 export default async function ListingImportPage() {
   const { userId } = await auth()
@@ -55,6 +56,7 @@ export default async function ListingImportPage() {
   ]
 
   return (
+    <PageContent>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold leading-tight text-foreground">Importação de Imóveis</h1>
@@ -96,5 +98,6 @@ export default async function ListingImportPage() {
         <ImportRunsTable runs={runs} />
       </section>
     </div>
+    </PageContent>
   )
 }
