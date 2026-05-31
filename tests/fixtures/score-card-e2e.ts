@@ -25,7 +25,7 @@ type SessionCookie = {
 }
 type PlaywrightSameSite = 'Strict' | 'Lax' | 'None'
 
-const E2E_PASSWORD = 'Score-card-e2e-Password-2026!'
+const E2E_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'Score-card-e2e-Password-2026!'
 
 function createAdminClient(): SupabaseAdmin {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
