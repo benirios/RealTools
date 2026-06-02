@@ -12,6 +12,8 @@ export type GeocodeInput = {
   city?: string | null
   state?: string | null
   country?: string | null
+  postalCode?: string | null
+  locationText?: string | null
   latitude?: number | string | null
   longitude?: number | string | null
 }
@@ -23,7 +25,7 @@ export type GeocodeResult = {
   neighborhood: string | null
   city: string | null
   state: string | null
-  provider: 'google' | 'nominatim' | 'mock' | 'passthrough' | string
+  provider: 'google' | 'nominatim' | 'geoapi_pt' | 'mock' | 'passthrough' | string
   confidence: number
   raw: unknown
   warnings: string[]
@@ -33,7 +35,7 @@ export type GeocodeResult = {
 export type DemographicEstimate = {
   avgIncome: number | null
   populationDensity: number | null
-  provider: 'mock' | 'external' | 'ibge_future' | string
+  provider: 'mock' | 'geoapi_pt' | 'ine_future' | string
   confidence: number
   sourceNotes: string[]
   raw: unknown
@@ -73,6 +75,7 @@ export type ResolvedLocationIntelligence = {
   nearbyBusinesses: NearbyBusiness[]
   dataSources: LocationIntelligenceDataSource[]
   confidenceScore: number
+  postalCode?: string | null
   rawGeocode: unknown
   rawDemographics: unknown
   rawPlaces: unknown
@@ -91,6 +94,7 @@ export type DemographicProvider = {
 
 export declare const DEFAULT_TIMEOUT_MS: number
 export declare const MockDemographicsProvider: DemographicProvider
+export declare const GeoapiPtDemographicsProvider: DemographicProvider
 export declare function fetchJsonWithTimeout(url: string, init?: Record<string, unknown>, timeoutMs?: number): Promise<unknown>
 export declare function geocodeLocation(input?: GeocodeInput, options?: Record<string, unknown>): Promise<GeocodeResult>
 export declare function getDemographicEstimate(location?: Record<string, unknown>, options?: Record<string, unknown>): Promise<DemographicEstimate>

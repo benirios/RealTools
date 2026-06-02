@@ -15,6 +15,7 @@ import {
   RecalculateClientWorkspaceButton,
 } from '@/components/investors/client-workspace-actions'
 import { loadDeals, loadPersistedMatchesForInvestor, type MatchDeal, type PersistedInvestorMatch } from '@/lib/investors/match-processing'
+import { EntityChat } from '@/components/chat/entity-chat'
 import { getAiSummaryJson } from '@/lib/ai/deal-summary-service'
 import { cn } from '@/lib/utils'
 import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
@@ -717,7 +718,7 @@ function ExportsTab() {
       <FileText className="mx-auto mb-3 size-10 text-muted-foreground" />
       <h2 className="text-lg font-semibold text-foreground">Exportações do cliente</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        TODO: este espaço vai concentrar memorandos e pacotes prontos para enviar ao cliente, usando as oportunidades salvas.
+        Em breve: memorandos e pacotes de oportunidades prontos para enviar ao cliente.
       </p>
     </section>
   )
@@ -801,6 +802,8 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
       {tab === 'saved' && <SavedTab client={client} items={pipelineItems} />}
       {tab === 'exports' && <ExportsTab />}
+
+      <EntityChat entityType="cliente" entityId={client.id} title={`Assistente — ${client.name}`} />
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Send className="size-4" />

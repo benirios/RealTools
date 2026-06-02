@@ -60,6 +60,7 @@ export default async function DashboardPage({
       (supabase.from('notes') as any)
         .select('*')
         .eq('deal_id', selectedId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false }) as Promise<{ data: NoteRow[] | null }>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('deal_files') as any)

@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { UserButton } from '@clerk/nextjs'
 import { HeaderSearch } from './header-search'
+import { clerkAppearance } from '@/lib/clerk-appearance'
 
 export function AppHeader() {
   return (
@@ -22,7 +23,7 @@ export function AppHeader() {
       </div>
 
       <div className="shrink-0">
-        <UserButton />
+        <UserButton appearance={clerkAppearance} />
       </div>
     </header>
   )

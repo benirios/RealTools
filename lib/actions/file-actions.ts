@@ -62,8 +62,11 @@ export async function deleteDealFileAction({
   if (!userId) redirect('/auth/login')
 
   const supabase = createSupabaseServiceClient()
-  await supabase.storage.from('deal-files').remove([storagePath])
 
+  // Delete DB record first — if storage removal fails the record is gone and the
+  // orphaned file wastes quota but doesn't create a broken link in the UI.
+  // Reversing the order risks deleting the file then failing the DB delete,
+  // leaving a DB record pointing to a non-existent object.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('deal_files') as any)
     .delete()
@@ -71,6 +74,8 @@ export async function deleteDealFileAction({
     .eq('user_id', userId)
 
   if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
+
+  await supabase.storage.from('deal-files').remove([storagePath])
 
   revalidatePath(`/deals/${dealId}`)
   return {}

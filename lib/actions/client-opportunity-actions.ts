@@ -6,7 +6,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { completeImportRun, failImportRun, startImportRun } from '@/lib/listings/import-runs'
 import { upsertListing } from '@/lib/listings/ingestion'
-import { scrapeOlxListings } from '@/lib/listings/olx'
+import { scrapeListings } from '@/lib/listings/scrape'
 import { processImportRunListings } from '@/lib/listings/processing'
 import { recalculateMatchesForInvestor } from '@/lib/investors/match-processing'
 import type { Database } from '@/types/supabase'
@@ -292,7 +292,7 @@ export async function runClientOlxSearchImportAction(
 
   const supabase = createSupabaseServiceClient()
   const { data: run, error: runError } = await startImportRun(supabase, userId, {
-    source: 'olx',
+    source: 'idealista',
     metadata: {
       importType: 'client_workspace_search',
       clientId,
@@ -306,7 +306,7 @@ export async function runClientOlxSearchImportAction(
   if (runError || !run) return { errors: { general: ['Não foi possível iniciar a busca do cliente.'] } }
 
   try {
-    const listings = await scrapeOlxListings({
+    const listings = await scrapeListings({
       searchTerm,
       region: locationQuery,
       city: locationQuery,
@@ -341,7 +341,7 @@ export async function runClientOlxSearchImportAction(
         failedCount,
       },
       {
-        source: 'olx',
+        source: 'idealista',
         importType: 'client_workspace_search',
         clientId,
         locationQuery,
@@ -382,7 +382,7 @@ export async function runClientOlxSearchImportAction(
   } catch (error) {
     const message = getErrorMessage(error)
     await failImportRun(supabase, run.id, userId, message, {
-      source: 'olx',
+      source: 'idealista',
       importType: 'client_workspace_search',
       clientId,
       locationQuery,

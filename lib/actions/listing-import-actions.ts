@@ -6,7 +6,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { completeImportRun, failImportRun, startImportRun } from '@/lib/listings/import-runs'
 import { upsertListing, upsertListingImportTarget } from '@/lib/listings/ingestion'
-import { scrapeOlxListings } from '@/lib/listings/olx'
+import { scrapeListings } from '@/lib/listings/scrape'
 import { DEFAULT_LISTING_IMPORT_TARGETS } from '@/lib/listings/constants'
 import { processImportRunListings } from '@/lib/listings/processing'
 import type { Database, Json } from '@/types/supabase'
@@ -58,14 +58,14 @@ export async function runOlxSearchImportAction(
 
   const supabase = createSupabaseServiceClient()
   const { data: run, error: runError } = await startImportRun(supabase, userId, {
-    source: 'olx',
+    source: 'idealista',
     metadata: { importType: 'on_demand_search', locationQuery, state, searchTerm, maxListings },
   })
 
   if (runError || !run) return { errors: { general: ['Não foi possível iniciar a importação.'] } }
 
   try {
-    const listings = await scrapeOlxListings({ searchTerm, region: locationQuery, city: locationQuery, state: state || undefined, maxListings })
+    const listings = await scrapeListings({ searchTerm, region: locationQuery, city: locationQuery, state: state || undefined, maxListings })
 
     let createdCount = 0
     let failedCount = 0
@@ -80,7 +80,7 @@ export async function runOlxSearchImportAction(
 
     await completeImportRun(supabase, run.id, userId,
       { createdCount, updatedCount: 0, skippedCount: 0, failedCount },
-      { source: 'olx', importType: 'on_demand_search', locationQuery, state, searchTerm, successfulUpserts: createdCount, savedUrls, failures: failures.slice(0, 10) }
+      { source: 'idealista', importType: 'on_demand_search', locationQuery, state, searchTerm, successfulUpserts: createdCount, savedUrls, failures: failures.slice(0, 10) }
     )
 
     const automation = await processImportRunListings(supabase, userId, run.id, savedUrls)
@@ -91,7 +91,7 @@ export async function runOlxSearchImportAction(
     return { message: `OLX search finished: ${createdCount} saved, ${failedCount} failed. Automation: ${automation.automation.enrichedCount} enriched, ${automation.automation.matchedCount} matched.` }
   } catch (error) {
     const message = getErrorMessage(error)
-    await failImportRun(supabase, run.id, userId, message, { source: 'olx', importType: 'on_demand_search', locationQuery, state, searchTerm })
+    await failImportRun(supabase, run.id, userId, message, { source: 'idealista', importType: 'on_demand_search', locationQuery, state, searchTerm })
     revalidatePath('/listings/import')
     return { errors: { general: [message] } }
   }
@@ -107,14 +107,15 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
     .select('*')
     .eq('id', targetId)
     .eq('user_id', userId)
-    .eq('source', 'olx')
+    .in('source', ['idealista', 'imovirtual'])
     .eq('is_active', true)
     .single() as { data: ListingImportTargetRow | null }
 
   if (!target) return { ok: false, message: 'Alvo de importação não encontrado ou inativo.' }
 
+  const targetSource = target.source === 'imovirtual' ? 'imovirtual' : 'idealista'
   const { data: run, error: runError } = await startImportRun(supabase, userId, {
-    source: 'olx',
+    source: targetSource,
     targetId: target.id,
     metadata: { state: target.state, city: target.city, searchTerm: target.search_term },
   })
@@ -122,7 +123,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
   if (runError || !run) return { ok: false, message: 'Não foi possível iniciar a importação.' }
 
   try {
-    const listings = await scrapeOlxListings({ state: target.state, city: target.city, searchTerm: target.search_term, maxListings: 25 })
+    const listings = await scrapeListings({ state: target.state, city: target.city, searchTerm: target.search_term, maxListings: 25 })
 
     let createdCount = 0
     let failedCount = 0
@@ -137,7 +138,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
 
     await completeImportRun(supabase, run.id, userId,
       { createdCount, updatedCount: 0, skippedCount: 0, failedCount },
-      { targetId: target.id, source: 'olx', successfulUpserts: createdCount, savedUrls, failures: failures.slice(0, 10) }
+      { targetId: target.id, source: targetSource, successfulUpserts: createdCount, savedUrls, failures: failures.slice(0, 10) }
     )
 
     const automation = await processImportRunListings(supabase, userId, run.id, savedUrls)
@@ -148,7 +149,7 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
     return { ok: failedCount === 0, message: `OLX import finished: ${createdCount} saved, ${failedCount} failed. Automation: ${automation.automation.enrichedCount} enriched, ${automation.automation.matchedCount} matched.` }
   } catch (error) {
     const message = getErrorMessage(error)
-    await failImportRun(supabase, run.id, userId, message, { targetId: target.id, source: 'olx' })
+    await failImportRun(supabase, run.id, userId, message, { targetId: target.id, source: targetSource })
     revalidatePath('/listings/import')
     return { ok: false, message }
   }

@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 
-// Allow OLX CDNs and Supabase Storage (for manually uploaded listing images)
-const ALLOWED_HOSTNAMES = /^([a-z0-9-]+\.)*((olx\.com(\.br)?)|zap\.com\.br|supabase\.co)$/
+// Derive the project-specific Supabase hostname from env — prevents proxying other tenants' storage
+const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : null
+
+function isAllowedHostname(hostname: string): boolean {
+  if (/^([a-z0-9-]+\.)*((olx\.com(\.br)?)|zap\.com\.br)$/.test(hostname)) return true
+  if (supabaseHostname && hostname === supabaseHostname) return true
+  return false
+}
 
 export async function GET(req: NextRequest) {
+  const { userId } = await auth()
+  if (!userId) return new NextResponse('Não autorizado', { status: 401 })
+
   const url = req.nextUrl.searchParams.get('url')
   if (!url) return new NextResponse('URL ausente', { status: 400 })
 
@@ -14,7 +26,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse('URL inválida', { status: 400 })
   }
 
-  if (!ALLOWED_HOSTNAMES.test(parsed.hostname)) {
+  if (!isAllowedHostname(parsed.hostname)) {
     return new NextResponse('Disallowed host', { status: 403 })
   }
 

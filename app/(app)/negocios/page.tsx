@@ -5,6 +5,7 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { PageContent } from '@/components/page-content'
 import { Badge } from '@/components/ui/badge'
 import { AddNegocioDialog } from '@/components/negocios/add-negocio-dialog'
+import { DeleteNegocioButton } from '@/components/negocios/delete-negocio-button'
 
 type NegocioStatus = 'suggested' | 'saved' | 'sent' | 'interested' | 'rejected' | 'negotiating' | 'closed'
 
@@ -103,6 +104,7 @@ export default async function NegociosPage() {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Score</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Atualizado</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -113,7 +115,7 @@ export default async function NegociosPage() {
                   <tr key={row.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       <Link
-                        href={`/imoveis/${row.opportunity_id}?clientId=${row.client_id}`}
+                        href={`/negocios/${row.id}`}
                         className="font-medium text-foreground hover:underline"
                       >
                         {row.listings?.title ?? row.opportunity_id.slice(0, 8)}
@@ -139,6 +141,9 @@ export default async function NegociosPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {formatDate(row.updated_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <DeleteNegocioButton negocioId={row.id} />
                     </td>
                   </tr>
                 )

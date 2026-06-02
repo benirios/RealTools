@@ -7,6 +7,8 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { DealSchema, type DealState } from '@/lib/schemas/deal'
 import type { Database } from '@/types/supabase'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 type DealInsert = Database['public']['Tables']['deals']['Insert']
 type DealUpdate = Database['public']['Tables']['deals']['Update']
 type DealFileRow = Database['public']['Tables']['deal_files']['Row']
@@ -53,7 +55,7 @@ export async function updateDealAction(
   if (!userId) redirect('/auth/login')
 
   const dealId = formData.get('dealId') as string
-  if (!dealId) return { errors: { general: ['ID do negócio ausente.'] } }
+  if (!dealId || !UUID_RE.test(dealId)) return { errors: { general: ['ID do negócio inválido.'] } }
 
   const parsed = DealSchema.safeParse({
     title:       formData.get('title'),
@@ -96,7 +98,8 @@ export async function deleteDealAction(dealId: string): Promise<{ error?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: files } = await (supabase.from('deal_files') as any)
     .select('storage_path')
-    .eq('deal_id', dealId) as { data: Pick<DealFileRow, 'storage_path'>[] | null }
+    .eq('deal_id', dealId)
+    .eq('user_id', userId) as { data: Pick<DealFileRow, 'storage_path'>[] | null }
 
   // Remove files from Storage (best-effort — orphan files waste quota but don't block)
   if (files && files.length > 0) {

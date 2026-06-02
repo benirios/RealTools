@@ -15,6 +15,7 @@ import { LocationInsightCard } from '@/components/listings/location-insight-card
 import { OpportunityScoreCard } from '@/components/listings/opportunity-score-card'
 import { StrategyFitCard } from '@/components/listings/strategy-fit-card'
 import { ClientOpportunityNotesForm, ClientOpportunityPipelineActions } from '@/components/investors/client-workspace-actions'
+import { EntityChat } from '@/components/chat/entity-chat'
 import { getListingLocationInsightByListingId } from '@/lib/location-intelligence/api'
 import { loadPersistedMatchesForListing, type PersistedListingMatch } from '@/lib/investors/match-processing'
 import { getAiSummaryJson, loadAiDealSummary } from '@/lib/ai/deal-summary-service'
@@ -164,12 +165,14 @@ function ClientOpportunityRecommendationView({
           <ArrowLeft className="size-4" />
           Voltar ao workspace do cliente
         </Link>
-        <Button asChild variant="outline" size="sm">
-          <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="mr-2 size-4" />
-            Ver no OLX
-          </a>
-        </Button>
+        {listing.source_url && (
+          <Button asChild variant="outline" size="sm">
+            <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-2 size-4" />
+              Ver no OLX
+            </a>
+          </Button>
+        )}
       </div>
 
       <section className="rounded-md border border-border bg-card p-5 md:p-6">
@@ -270,6 +273,13 @@ function ClientOpportunityRecommendationView({
           />
         </div>
       </section>
+
+      <EntityChat
+        entityType="negocio"
+        entityId={listing.id}
+        clientId={client.id}
+        title={`Assistente — ${client.name}`}
+      />
 
       <details className="group rounded-md border border-border bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
@@ -437,12 +447,14 @@ export default async function ImovelDetailPage({
               </div>
             )}
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 size-4" />
-              Ver no OLX
-            </a>
-          </Button>
+          {listing.source_url && (
+            <Button asChild variant="outline" size="sm" className="shrink-0">
+              <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 size-4" />
+                Ver no OLX
+              </a>
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -551,6 +563,8 @@ export default async function ImovelDetailPage({
       />
 
       <ListingInvestorMatches matches={investorMatches} />
+
+      <EntityChat entityType="imovel" entityId={listing.id} title="Assistente — Imóvel" />
     </div>
     </PageContent>
   )

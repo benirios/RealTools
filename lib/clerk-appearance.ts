@@ -1,4 +1,4 @@
-import type { Appearance } from '@clerk/nextjs/server'
+import type { Appearance } from '@clerk/types'
 
 export const clerkAppearance: Appearance = {
   layout: {
@@ -44,5 +44,17 @@ export const clerkAppearance: Appearance = {
       'bg-[#111111] border border-[#30302d] text-[#f6f6f3] rounded-lg',
     alertText: 'text-[#ff6868]',
     alertIcon: 'text-[#ff6868]',
+
+    // UserButton popup
+    userButtonPopoverCard: 'bg-[#0f0f0f] border border-[#30302d] shadow-2xl rounded-xl p-0 overflow-hidden',
+    userButtonPopoverActions: 'p-1',
+    userButtonPopoverActionButton: 'rounded-lg text-[#a4a29b] hover:bg-[#1a1a1a] hover:text-[#f6f6f3] transition-colors px-3 py-2',
+    userButtonPopoverActionButtonText: 'text-sm font-medium',
+    userButtonPopoverActionButtonIcon: 'text-[#64615b]',
+    userButtonPopoverFooter: 'hidden',
+    userPreviewMainIdentifier: 'text-[#f6f6f3] font-semibold text-sm',
+    userPreviewSecondaryIdentifier: 'text-[#64615b] text-xs',
+    userButtonPopoverMain: 'p-0',
+    avatarBox: 'ring-1 ring-[#30302d]',
   },
 }

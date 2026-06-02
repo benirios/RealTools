@@ -32,7 +32,7 @@ export function buildListingLocationInput(listing: ListingRow): LocationInsightI
     neighborhood: listing.neighborhood ?? null,
     city: listing.city ?? null,
     state: listing.state ?? null,
-    country: listing.country ?? 'BR',
+    country: listing.country ?? 'PT',
     latitude: listing.lat ?? null,
     longitude: listing.lng ?? null,
   })
@@ -66,7 +66,7 @@ export function buildEphemeralLocationInsight(
     neighborhood: insight.neighborhood ?? null,
     city: insight.city,
     state: insight.state,
-    country: insight.country ?? 'BR',
+    country: insight.country ?? 'PT',
     latitude: insight.latitude ?? null,
     longitude: insight.longitude ?? null,
     avgIncome: insight.avgIncome ?? null,

@@ -63,3 +63,34 @@ export async function createNegocioAction(
   revalidatePath(`/imoveis/${opportunityId}`)
   return {}
 }
+
+export async function deleteNegocioAction(negocioId: string): Promise<{ error?: string }> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  if (!UUID_RE.test(negocioId)) return { error: 'ID inválido.' }
+
+  const supabase = createSupabaseServiceClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: negocio } = await (supabase.from('client_opportunities') as any)
+    .select('client_id, opportunity_id')
+    .eq('id', negocioId)
+    .eq('user_id', userId)
+    .single() as { data: { client_id: string; opportunity_id: string } | null }
+
+  if (!negocio) return { error: 'Negócio não encontrado.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('client_opportunities') as any)
+    .delete()
+    .eq('id', negocioId)
+    .eq('user_id', userId)
+
+  if (error) return { error: 'Não foi possível excluir. Tente novamente.' }
+
+  revalidatePath('/negocios')
+  revalidatePath(`/investors/${negocio.client_id}`)
+  revalidatePath(`/imoveis/${negocio.opportunity_id}`)
+  return {}
+}

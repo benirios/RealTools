@@ -10,6 +10,8 @@ import type { Database } from '@/types/supabase'
 type NoteInsert = Database['public']['Tables']['notes']['Insert']
 type NoteUpdate = Database['public']['Tables']['notes']['Update']
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const NoteSchema = z.object({
   content: z.string().min(1, 'O conteúdo da nota é obrigatório'),
   deal_id: z.string().uuid(),
@@ -80,7 +82,9 @@ export async function updateNoteAction(
 
   const noteId = formData.get('note_id') as string
   const dealId = formData.get('deal_id') as string
-  if (!noteId || !dealId) return { errors: { general: ['ID da nota ausente.'] } }
+  if (!noteId || !dealId || !UUID_RE.test(noteId) || !UUID_RE.test(dealId)) {
+    return { errors: { general: ['ID da nota inválido.'] } }
+  }
 
   const parsed = NoteUpdateSchema.safeParse({
     content: formData.get('content'),
@@ -114,6 +118,8 @@ export async function deleteNoteAction(
 ): Promise<{ error?: string }> {
   const { userId } = await auth()
   if (!userId) redirect('/auth/login')
+
+  if (!UUID_RE.test(noteId) || !UUID_RE.test(dealId)) return { error: 'ID inválido.' }
 
   const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

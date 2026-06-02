@@ -22,7 +22,7 @@ export const LocationInsightInputSchema = z.object({
   neighborhood: z.string().min(1).nullable().optional(),
   city: z.string().min(1).nullable().optional(),
   state: z.string().min(1).nullable().optional(),
-  country: z.string().default('BR'),
+  country: z.string().default('PT'),
   latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
   longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
 })
@@ -35,7 +35,7 @@ export const LocationInsightPersistedSchema = z.object({
   neighborhood: z.string().nullable().optional(),
   city: z.string().min(1),
   state: z.string().min(1),
-  country: z.string().default('BR'),
+  country: z.string().default('PT'),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   avgIncome: z.number().nonnegative().nullable().optional(),

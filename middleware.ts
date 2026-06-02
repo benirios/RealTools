@@ -6,7 +6,6 @@ const isPublicRoute = createRouteMatcher([
   '/auth/signup(.*)',
   '/om(.*)',
   '/api/track(.*)',
-  '/api/proxy-image(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

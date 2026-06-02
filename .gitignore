@@ -59,3 +59,15 @@ graphify-out/cache/
 .env.local
 .env.*.local
 *.key
+*.p12
+*.pfx
+
+# test artifacts
+/test-results/
+/playwright-report/
+
+# internal audit & planning artifacts — keep local, do not publish
+/sec-report.md
+/sec-deep-report.md
+/plan.md
+/handoff.md

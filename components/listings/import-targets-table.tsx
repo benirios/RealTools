@@ -41,7 +41,7 @@ export function ImportTargetsTable({ targets }: { targets: ImportTarget[] }) {
               {target.is_active ? 'Ativo' : 'Inativo'}
             </Badge>
             <div className="md:text-right">
-              {target.source === 'olx' && target.is_active ? (
+              {(target.source === 'idealista' || target.source === 'imovirtual') && target.is_active ? (
                 <RunOlxImportButton targetId={target.id} />
               ) : (
                 <span className="text-xs text-muted-foreground">Somente manual</span>

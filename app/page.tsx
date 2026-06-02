@@ -270,7 +270,7 @@ function DealHubMockup() {
 
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-2">Atividade Recente</p>
-                {/* TODO(human): map BUYER_ACTIVITY to activity row cards here.
+                {/* TODO: map BUYER_ACTIVITY to activity row cards here.
                     Each row should show buyer name, action, time, and a "Hot" badge when hot === true.
                     Keep it compact — this panel is only 5 cols wide. */}
               </div>

@@ -17,7 +17,7 @@ function buildDemoInputFromListing(listing: ListingRow, listingId: string | null
     neighborhood,
     city,
     state,
-    country: listing.country?.trim() || 'BR',
+    country: listing.country?.trim() || 'PT',
     latitude: listing.lat ?? null,
     longitude: listing.lng ?? null,
   }

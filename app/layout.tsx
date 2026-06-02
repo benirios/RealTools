@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { Toaster } from 'sonner'
 import './globals.css'
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,10 @@ export default function RootLayout({
   return (
     <ClerkProvider signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="pt-BR" className={cn("font-sans", geist.variable)}>
-        <body>{children}</body>
+        <body>
+          {children}
+          <Toaster richColors position="bottom-right" />
+        </body>
       </html>
     </ClerkProvider>
   )
