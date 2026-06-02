@@ -26,7 +26,7 @@ import { resolve } from 'node:path'
   } catch {}
 })()
 
-import { scrapeListings } from '../lib/listings/scrape.js'
+import { scrapeOlxListings } from '../lib/listings/olx'
 import { createClient } from '@supabase/supabase-js'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ async function cmdScrape(args: string[]) {
   const label = [term, flags.address, flags.city, flags.state].filter(Boolean).join(' · ')
   console.log(`Scraping OLX: "${label}"…\n`)
 
-  const listings = await scrapeListings({
+  const listings = await scrapeOlxListings({
     searchTerm: term,
     address: flags.address,
     city: flags.city,
