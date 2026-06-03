@@ -45,6 +45,24 @@ next-env.d.ts
 # nested legacy repo copy
 /RealTools/
 
+# unrelated projects (cleaned up)
+/DMDI/
+/loja/
+/MvcSimplesAula1/
+/MvcSimplesAula1.zip
+/Pombus/
+/Portifolio/
+/MafiaStore/
+/Hype-Cartel/
+/Memory/
+/sandbox/
+/secmaxxing/
+/smaxxing.png
+/handoff.md
+/sec-deep-report.md
+/sec-report.md
+/plan.md
+
 # local tool config
 .claude/
 .codex/
