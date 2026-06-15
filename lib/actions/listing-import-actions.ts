@@ -62,7 +62,11 @@ export async function runOlxSearchImportAction(
     metadata: { importType: 'on_demand_search', locationQuery, state, searchTerm, maxListings },
   })
 
-  if (runError || !run) return { errors: { general: ['Não foi possível iniciar a importação.'] } }
+  if (runError || !run) {
+    const msg = runError instanceof Error ? runError.message : (runError as { message?: string })?.message ?? JSON.stringify(runError)
+    console.error('[startImportRun] failed:', msg)
+    return { errors: { general: [`Não foi possível iniciar a importação: ${msg}`] } }
+  }
 
   try {
     const listings = await scrapeOlxListings({ searchTerm, region: locationQuery, city: locationQuery, state: state || undefined, maxListings })
@@ -119,7 +123,11 @@ export async function runOlxImportAction(targetId: string): Promise<ImportAction
     metadata: { state: target.state, city: target.city, searchTerm: target.search_term },
   })
 
-  if (runError || !run) return { ok: false, message: 'Não foi possível iniciar a importação.' }
+  if (runError || !run) {
+    const msg = runError instanceof Error ? runError.message : (runError as { message?: string })?.message ?? JSON.stringify(runError)
+    console.error('[startImportRun target] failed:', msg)
+    return { ok: false, message: `Não foi possível iniciar a importação: ${msg}` }
+  }
 
   try {
     const listings = await scrapeOlxListings({ state: target.state, city: target.city, searchTerm: target.search_term, maxListings: 25 })

@@ -21,6 +21,8 @@ import { getAiSummaryJson, loadAiDealSummary } from '@/lib/ai/deal-summary-servi
 import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
 import { getScoreHistory, getStrategyFitScores } from '@/lib/scoring/data'
 import { scoreRowToCardEntry } from '@/lib/scoring/score-card-ui'
+import { OmRecipientsCard } from '@/components/listings/om-recipients-card'
+import { getOmSendsForListingAction } from '@/lib/actions/om-actions'
 import type { Database } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
@@ -355,6 +357,7 @@ export default async function ImovelDetailPage({
   const scoreEntries = scoreRows.map(scoreRowToCardEntry)
   const strategyFitRows = await getStrategyFitScores(supabase, userId, id)
   const investorMatches = await loadPersistedMatchesForListing(supabase, userId, id)
+  const omSends = await getOmSendsForListingAction(id)
   const aiSummaryRow = await loadAiDealSummary(supabase, userId, id)
   const aiSummary = getAiSummaryJson(aiSummaryRow)
   const clientContext = clientId
@@ -551,6 +554,13 @@ export default async function ImovelDetailPage({
       />
 
       <ListingInvestorMatches matches={investorMatches} />
+
+      <OmRecipientsCard
+        listingId={listing.id}
+        listingTitle={listing.title}
+        matches={investorMatches}
+        initialSends={omSends}
+      />
     </div>
     </PageContent>
   )

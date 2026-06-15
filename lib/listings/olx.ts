@@ -153,12 +153,14 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       try {
         const detail = await context.newPage()
         await detail.goto(sourceUrl, { waitUntil: 'domcontentloaded', timeout: 15000 })
+        // Give JS time to inject JSON-LD and __NEXT_DATA__ before evaluating
+        await detail.waitForTimeout(1200)
 
         const extracted = await detail.evaluate(() => {
           const bodyText = document.body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
           const images: string[] = []
 
-          // JSON-LD structured data — present for SEO, in initial HTML, not lazy-loaded
+          // 1. JSON-LD structured data (most reliable — OLX injects for SEO)
           document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => {
             try {
               const data = JSON.parse(el.textContent ?? '') as Record<string, unknown>
@@ -170,19 +172,32 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
             } catch {}
           })
 
-          // DOM fallback: real img src/data-src (works if Cloudflare didn't block us)
+          // 2. window.__NEXT_DATA__ — OLX Next.js hydration payload contains full gallery
           if (images.length === 0) {
-            document.querySelectorAll('img').forEach((img) => {
+            try {
+              const nd = (window as unknown as { __NEXT_DATA__?: { props?: { pageProps?: { ad?: { images?: { original?: { secureUrl?: string } }[] } } } } }).__NEXT_DATA__
+              const adImages = nd?.props?.pageProps?.ad?.images ?? []
+              adImages.forEach((img) => {
+                const url = img?.original?.secureUrl
+                if (url && url.startsWith('http')) images.push(url)
+              })
+            } catch {}
+          }
+
+          // 3. DOM fallback: picture/img with real src or data-src
+          if (images.length === 0) {
+            document.querySelectorAll('img, picture source').forEach((el) => {
               const src =
-                (img as HTMLImageElement).currentSrc ||
-                img.getAttribute('data-src') ||
-                img.getAttribute('data-lazy') ||
-                (img as HTMLImageElement).src
+                el.getAttribute('srcset')?.split(',')[0]?.trim().split(' ')[0] ||
+                (el as HTMLImageElement).currentSrc ||
+                el.getAttribute('data-src') ||
+                el.getAttribute('data-lazy') ||
+                (el as HTMLImageElement).src
               if (src && !src.startsWith('data:') && src.startsWith('http')) images.push(src)
             })
           }
 
-          return { bodyText, images: images.slice(0, 8) }
+          return { bodyText, images: [...new Set(images)].slice(0, 8) }
         })
 
         if (!isCloudflareBlock(extracted.bodyText)) {

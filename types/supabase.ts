@@ -331,6 +331,54 @@ export type Database = {
           },
         ]
       }
+      investor_om_sends: {
+        Row: {
+          id: string
+          user_id: string
+          listing_id: string
+          investor_id: string
+          tracking_token: string
+          om_sent_at: string | null
+          om_opened_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          listing_id: string
+          investor_id: string
+          tracking_token?: string
+          om_sent_at?: string | null
+          om_opened_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          listing_id?: string
+          investor_id?: string
+          tracking_token?: string
+          om_sent_at?: string | null
+          om_opened_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_om_sends_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_om_sends_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_listing_matches: {
         Row: {
           breakdown: Json

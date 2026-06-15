@@ -4,6 +4,7 @@ import type { Database } from '@/types/supabase'
 
 type DealBuyerRow = Database['public']['Tables']['deal_buyers']['Row']
 type BuyerRow = Database['public']['Tables']['buyers']['Row']
+type InvestorOmSendRow = Database['public']['Tables']['investor_om_sends']['Row']
 
 /**
  * Idempotent OM open recorder.
@@ -58,4 +59,28 @@ export async function recordOmOpenByToken(token: string): Promise<void> {
       buyer_email: buyer?.email ?? null,
     },
   })
+}
+
+/**
+ * Idempotent OM open recorder for the investor model.
+ *
+ * Mirrors recordOmOpenByToken but operates on investor_om_sends.
+ * No activity insert — activities.deal_id is NOT NULL and FKs to deals,
+ * so investor sends (which have no deal) cannot write to that table.
+ * The send row's om_opened_at timestamp IS the record.
+ */
+export async function recordInvestorOmOpenByToken(token: string): Promise<void> {
+  if (!token) return
+
+  const supabase = createSupabaseServiceClient()
+  const openedAt = new Date().toISOString()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('investor_om_sends') as any)
+    .update({ om_opened_at: openedAt })
+    .eq('tracking_token', token)
+    .is('om_opened_at', null)
+    .select('listing_id, investor_id')
+    .single() as { data: Pick<InvestorOmSendRow, 'listing_id' | 'investor_id'> | null }
+  // No-op for unknown or already-opened tokens — same security behavior as recordOmOpenByToken.
 }

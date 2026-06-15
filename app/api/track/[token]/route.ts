@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { recordOmOpenByToken } from '@/lib/tracking/record-om-open'
+import { recordOmOpenByToken, recordInvestorOmOpenByToken } from '@/lib/tracking/record-om-open'
 
 // 1x1 transparent GIF (43 bytes, base64-encoded)
 // Source: canonical minimal GIF used in tracking pixels
@@ -29,7 +29,13 @@ export async function GET(
   // in Next.js Route Handlers the response only sends after the function returns,
   // so we await to ensure the DB write completes before the response is sent.
   // This keeps the handler simple and correct.
-  await recordOmOpenByToken(token)
+  // Try deal_buyers first, then investor_om_sends. Tokens are unique within
+  // each table but not across tables — run both in parallel; both are no-ops
+  // for unknown/already-opened tokens.
+  await Promise.all([
+    recordOmOpenByToken(token),
+    recordInvestorOmOpenByToken(token),
+  ])
 
   return new Response(GIF_1x1, {
     status: 200,

@@ -711,14 +711,73 @@ function SavedTab({
   )
 }
 
-function ExportsTab() {
+function formatDate(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function InvestorExportsTab({
+  sends,
+}: {
+  investorId: string
+  sends: Array<{
+    id: string
+    tracking_token: string
+    om_sent_at: string | null
+    om_opened_at: string | null
+    created_at: string | null
+    listing_id: string
+    listings: { title: string; price_text: string | null; city: string | null; state: string | null } | null
+  }>
+}) {
+  if (sends.length === 0) {
+    return (
+      <section className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+        <FileText className="mx-auto mb-3 size-10 text-muted-foreground" />
+        <h2 className="text-lg font-semibold text-foreground">Memorandos enviados</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Nenhum memorando de oportunidade foi enviado a este cliente ainda.
+          Acesse um imóvel e use &quot;Enviar OM por Email&quot; para iniciar o envio.
+        </p>
+      </section>
+    )
+  }
+
   return (
-    <section className="rounded-md border border-dashed border-border bg-card p-8 text-center">
-      <FileText className="mx-auto mb-3 size-10 text-muted-foreground" />
-      <h2 className="text-lg font-semibold text-foreground">Exportações do cliente</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        TODO: este espaço vai concentrar memorandos e pacotes prontos para enviar ao cliente, usando as oportunidades salvas.
-      </p>
+    <section className="rounded-md border border-border bg-card">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <FileText className="size-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">Memorandos enviados ({sends.length})</h2>
+      </div>
+      <ul className="divide-y divide-border">
+        {sends.map((send) => (
+          <li key={send.id} className="flex items-center gap-4 px-5 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">
+                {send.listings?.title ?? 'Imóvel'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {[send.listings?.city, send.listings?.state].filter(Boolean).join(', ')}
+                {send.listings?.price_text ? ` · ${send.listings.price_text}` : ''}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0 text-xs">
+              <span className="text-muted-foreground">Enviado em {formatDate(send.om_sent_at)}</span>
+              {send.om_opened_at ? (
+                <span className="text-green-600">Aberto em {formatDate(send.om_opened_at)}</span>
+              ) : (
+                <span className="text-muted-foreground">Não aberto ainda</span>
+              )}
+            </div>
+            <a
+              href={`/imoveis/${send.listing_id}`}
+              className="shrink-0 text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Ver imóvel
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
@@ -749,6 +808,8 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
     ...pipelineItems.map((item) => item.deal.id),
   ]))
   const summaries = await loadSummaries(supabase, userId, summaryListingIds)
+  const { getOmSendsForInvestorAction } = await import('@/lib/actions/om-actions')
+  const omSends = tab === 'exports' ? await getOmSendsForInvestorAction(client.id) : []
 
   return (
     <PageContent>
@@ -800,7 +861,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} summaries={summaries} />}
       {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
       {tab === 'saved' && <SavedTab client={client} items={pipelineItems} />}
-      {tab === 'exports' && <ExportsTab />}
+      {tab === 'exports' && <InvestorExportsTab investorId={client.id} sends={omSends} />}
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Send className="size-4" />

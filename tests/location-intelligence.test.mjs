@@ -37,10 +37,13 @@ test('coordinate passthrough skips provider lookup', async () => {
 })
 
 test('address geocoding falls back to mock recognition', async () => {
+  // Pass fetchImpl returning empty array so Nominatim finds no results → mock fallback
   const result = await geocodeLocation({
     address: 'Boa Viagem',
     city: 'Recife',
     state: 'PE',
+  }, {
+    fetchImpl: async () => ({ ok: true, json: async () => [] }),
   })
 
   assert.equal(result.provider, 'mock')
@@ -160,9 +163,12 @@ test('sidra demographics resolve through ibge localities and sidra tables', asyn
 })
 
 test('demographic fallback returns mock values', async () => {
+  // Pass fetchImpl returning non-ok so SIDRA fails → MockDemographicsProvider fallback
   const result = await getDemographicEstimate({
     city: 'Curitiba',
     state: 'PR',
+  }, {
+    fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }),
   })
 
   assert.equal(result.provider, 'mock')
@@ -198,10 +204,16 @@ test('consumer profile combines income density and nearby business mix', () => {
 })
 
 test('confidence is reduced for fallback-only enrichment', async () => {
+  // fetchImpl forces Nominatim (empty) and SIDRA (non-ok) to fail → all mock fallbacks
   const result = await resolveLocationIntelligence({
     address: 'Lugar sem referência',
     city: 'Cidade',
     state: 'ST',
+  }, {
+    fetchImpl: async (url) => {
+      if (String(url).includes('nominatim')) return { ok: true, json: async () => [] }
+      return { ok: false, status: 500, json: async () => ({}) }
+    },
   })
 
   assert.ok(result.confidenceScore <= 55)

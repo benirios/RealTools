@@ -41,6 +41,22 @@ export function FilesSection({
     const file = e.target.files?.[0]
     if (!file) return
 
+    const ALLOWED_MIME = new Set([
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    ])
+    if (!ALLOWED_MIME.has(file.type)) {
+      toast.error('Tipo de arquivo não permitido. Use PDF, Word, Excel, PowerPoint ou imagem.')
+      e.target.value = ''
+      return
+    }
+
     // 50MB limit
     if (file.size > 50 * 1024 * 1024) {
       toast.error('Arquivo muito grande. Máximo de 50MB.')

@@ -49,8 +49,10 @@ export type PersistedInvestorMatch = InvestorDealMatch & {
 
 export type PersistedListingMatch = InvestorDealMatch & {
   id: string
-  investor: Pick<InvestorRow, 'id' | 'name' | 'strategy' | 'risk_level'>
+  investor: Pick<InvestorRow, 'id' | 'name' | 'email' | 'strategy' | 'risk_level'>
   processed_at: string
+  investor_email?: string | null
+  investor_name?: string | null
 }
 
 function unique(values: string[]) {
@@ -396,9 +398,13 @@ export async function loadPersistedMatchesForListing(
       investor: {
         id: investor.id,
         name: investor.name,
+        email: investor.email,
         strategy: investor.strategy,
         risk_level: investor.risk_level,
       },
+      investor_id: match.investor_id,
+      investor_name: investor.name,
+      investor_email: investor.email,
       processed_at: match.processed_at,
       match_score: match.match_score,
       match_status: match.match_status as InvestorDealMatch['match_status'],
@@ -410,7 +416,6 @@ export async function loadPersistedMatchesForListing(
       concerns: Array.isArray(match.concerns) ? match.concerns.filter((item): item is string => typeof item === 'string') : [],
       recommended_action: match.recommended_action ?? '',
       missing_data: Array.isArray(match.missing_data) ? match.missing_data.filter((item): item is string => typeof item === 'string') : [],
-      investor_id: match.investor_id,
       point_id: match.listing_id,
     }]
   })

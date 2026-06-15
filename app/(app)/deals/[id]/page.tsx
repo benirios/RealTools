@@ -47,16 +47,19 @@ export default async function DealHubPage({
     (supabase.from('notes') as any)
       .select('*')
       .eq('deal_id', id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false }) as Promise<{ data: NoteRow[] | null; error: unknown }>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('deal_files') as any)
       .select('*')
       .eq('deal_id', id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false }) as Promise<{ data: DealFileRow[] | null; error: unknown }>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from('activities') as any)
       .select('*')
       .eq('deal_id', id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false }) as Promise<{ data: ActivityRow[] | null; error: unknown }>,
   ])
 
