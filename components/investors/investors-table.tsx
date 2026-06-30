@@ -1,7 +1,12 @@
+'use client'
+
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Pencil } from 'lucide-react'
+import { Pencil, Search, X } from 'lucide-react'
+import Fuse from 'fuse.js'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { InvestorFormModal, type InvestorFormInvestor } from '@/components/investors/investor-form-modal'
 import { DeleteInvestorButton } from '@/components/investors/investor-actions'
 
@@ -36,6 +41,23 @@ const RISK_LABELS: Record<string, string> = {
 }
 
 export function InvestorsTable({ investors }: Props) {
+  const [search, setSearch] = useState('')
+
+  const fuse = useMemo(() => new Fuse(investors, {
+    keys: [
+      { name: 'name', weight: 2 },
+      { name: 'email', weight: 1.5 },
+      { name: 'tags', weight: 1 },
+    ],
+    threshold: 0.3,
+    minMatchCharLength: 1,
+  }), [investors])
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return investors
+    return fuse.search(search).map(result => result.item)
+  }, [search, fuse, investors])
+
   if (investors.length === 0) {
     return (
       <div className="rounded-md border border-border bg-card p-8 text-center">
@@ -50,13 +72,45 @@ export function InvestorsTable({ investors }: Props) {
 
   return (
     <div className="overflow-hidden rounded-md border border-border bg-card">
-      <div className="hidden grid-cols-[1.2fr_1fr_0.8fr_0.8fr_1fr_auto] gap-4 border-b border-border bg-secondary px-4 py-3 md:grid">
-        {['Cliente', 'Orçamento', 'Estratégia', 'Risco', 'Etiquetas', 'Ações'].map((label) => (
-          <span key={label} className="text-[11px] font-medium uppercase text-muted-foreground">{label}</span>
-        ))}
+      <div className="border-b border-border bg-card p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, email ou etiqueta..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Limpar busca"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+        {search && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {filtered.length} de {investors.length} cliente{investors.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
-      <div className="divide-y divide-border/70">
-        {investors.map((investor) => (
+
+      {filtered.length === 0 && search ? (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          Nenhum cliente encontrado para "{search}".
+        </div>
+      ) : (
+        <>
+          <div className="hidden grid-cols-[1.2fr_1fr_0.8fr_0.8fr_1fr_auto] gap-4 border-b border-border bg-secondary px-4 py-3 md:grid">
+            {['Cliente', 'Orçamento', 'Estratégia', 'Risco', 'Etiquetas', 'Ações'].map((label) => (
+              <span key={label} className="text-[11px] font-medium uppercase text-muted-foreground">{label}</span>
+            ))}
+          </div>
+          <div className="divide-y divide-border/70">
+            {filtered.map((investor) => (
           <div
             key={investor.id}
             className="grid gap-3 px-4 py-4 text-sm md:grid-cols-[1.2fr_1fr_0.8fr_0.8fr_1fr_auto] md:items-center"
@@ -89,8 +143,10 @@ export function InvestorsTable({ investors }: Props) {
               <DeleteInvestorButton investorId={investor.id} />
             </div>
           </div>
-        ))}
-      </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
