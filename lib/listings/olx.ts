@@ -184,10 +184,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
 
     const drafts: ListingDraft[] = []
 
-    const searchTermLower = target.searchTerm.toLowerCase()
-    const isCommercialSearch = /comercial|ponto|loja|sala|galpao|varejo|comercio/i.test(searchTermLower)
-    const COMMERCIAL_KEYWORDS = ['ponto', 'comercial', 'sala', 'loja', 'galpão', 'galpao', 'varejo', 'comércio', 'comrcio', 'venda']
-    const RESIDENTIAL_KEYWORDS = ['apartamento', 'apto', 'quarto', 'bedroom', 'suite', 'studio', 'conjugado', 'kitnet']
+    const isCommercialSearch = /comercial|ponto|loja|sala|galpao|varejo|comercio/i.test(target.searchTerm)
+    const RESIDENTIAL_TITLE_KEYWORDS = ['apartamento', 'apto', ' quarto', 'bedroom', 'suite', 'studio', 'conjugado', 'kitnet']
 
     for (const raw of rawCards) {
       const sourceUrl = toAbsoluteUrl(raw.href)
@@ -195,11 +193,9 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
 
       const titleLower = (raw.title ?? '').toLowerCase()
 
-      // For commercial searches: REQUIRE commercial keyword in title, EXCLUDE residential
-      if (isCommercialSearch) {
-        const hasCommercialKeyword = COMMERCIAL_KEYWORDS.some((kw) => titleLower.includes(kw))
-        const hasResidentialKeyword = RESIDENTIAL_KEYWORDS.some((kw) => titleLower.includes(kw))
-        if (!hasCommercialKeyword || hasResidentialKeyword) continue
+      // For commercial searches: exclude clear residential listings by title only
+      if (isCommercialSearch && RESIDENTIAL_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) {
+        continue
       }
 
       let description: string | undefined
