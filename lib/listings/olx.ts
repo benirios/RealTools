@@ -183,16 +183,21 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
     }, maxListings)
 
     const drafts: ListingDraft[] = []
-    const normalizedSearchTerm = target.searchTerm.toLowerCase()
+    // Split search term into keywords for flexible matching (match any keyword)
+    const keywords = target.searchTerm
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((k) => k.length > 2) // Skip short words like "de", "ou"
 
     for (const raw of rawCards) {
       const sourceUrl = toAbsoluteUrl(raw.href)
       if (!sourceUrl || !isListingUrl(sourceUrl)) continue
 
-      // Post-filter: ensure listing title/text mentions search term
+      // Post-filter: ensure listing matches at least one keyword from search term
       const titleLower = (raw.title ?? '').toLowerCase()
       const locationLower = (raw.location ?? '').toLowerCase()
-      if (!titleLower.includes(normalizedSearchTerm) && !locationLower.includes(normalizedSearchTerm)) {
+      const textToSearch = `${titleLower} ${locationLower}`
+      if (keywords.length > 0 && !keywords.some((kw) => textToSearch.includes(kw))) {
         continue
       }
 
