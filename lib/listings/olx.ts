@@ -189,6 +189,11 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       .split(/\s+/)
       .filter((k) => k.length > 2) // Skip short words like "de", "ou"
 
+    const RESIDENTIAL_KEYWORDS = [
+      'apartamento', 'apto', 'quarto', 'bedroom', 'suite', 'studio',
+      'conjugado', 'kitnet', 'temporada', 'aluga-se',
+    ]
+
     for (const raw of rawCards) {
       const sourceUrl = toAbsoluteUrl(raw.href)
       if (!sourceUrl || !isListingUrl(sourceUrl)) continue
@@ -198,6 +203,11 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       const locationLower = (raw.location ?? '').toLowerCase()
       const textToSearch = `${titleLower} ${locationLower}`
       if (keywords.length > 0 && !keywords.some((kw) => textToSearch.includes(kw))) {
+        continue
+      }
+
+      // Exclude residential listings when searching for commercial
+      if (RESIDENTIAL_KEYWORDS.some((kw) => titleLower.includes(kw))) {
         continue
       }
 
