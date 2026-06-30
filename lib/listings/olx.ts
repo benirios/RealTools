@@ -39,6 +39,33 @@ function isCloudflareBlock(text: string) {
   return text.includes('Please enable cookies') || text.includes('Cloudflare Ray ID')
 }
 
+const NON_LISTING_PATHS = [
+  '/minhas-compras',
+  '/minhas-vendas',
+  '/notificacoes',
+  '/chat',
+  '/meus-anuncios',
+  '/plano-profissional',
+  '/pagina-inicial',
+  '/cadastro',
+  '/entrar',
+  '/conta',
+  '/perfil',
+  '/ajuda',
+  '/favoritos',
+]
+
+function isListingUrl(url: string): boolean {
+  try {
+    const path = new URL(url).pathname
+    if (NON_LISTING_PATHS.some((p) => path === p || path.startsWith(p + '/'))) return false
+    // Must have /item/ or be a deep /imoveis/ path (category slug + listing slug)
+    return path.includes('/item/') || (path.startsWith('/imoveis/') && path.split('/').length >= 4)
+  } catch {
+    return false
+  }
+}
+
 export function buildOlxSearchUrl(target: OlxTarget) {
   const query = [
     target.searchTerm,
@@ -98,8 +125,13 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       .catch(() => {})
 
     const rawCards = await page.evaluate((limit) => {
+      const BLOCKED = [
+        '/minhas-compras', '/minhas-vendas', '/notificacoes', '/chat',
+        '/meus-anuncios', '/plano-profissional', '/pagina-inicial',
+        '/cadastro', '/entrar', '/conta', '/perfil', '/ajuda', '/favoritos',
+      ]
       const anchors = Array.from(
-        document.querySelectorAll<HTMLAnchorElement>('a[href*="/item/"], a[href*="olx.com.br"]')
+        document.querySelectorAll<HTMLAnchorElement>('a[href*="/item/"], a[href*="/imoveis/"]')
       )
       const seen = new Set<string>()
 
@@ -107,6 +139,16 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         .map((anchor) => {
           const href = anchor.href
           if (!href || seen.has(href)) return null
+          try {
+            const path = new URL(href).pathname
+            if (BLOCKED.some((b) => path === b || path.startsWith(b + '/'))) return null
+            // Must be a listing: /item/... or deep /imoveis/ path (≥4 segments)
+            const isListing =
+              path.includes('/item/') || (path.startsWith('/imoveis/') && path.split('/').length >= 4)
+            if (!isListing) return null
+          } catch {
+            return null
+          }
           seen.add(href)
 
           const container = anchor.closest('section, article, li, div') ?? anchor
@@ -144,7 +186,7 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
 
     for (const raw of rawCards) {
       const sourceUrl = toAbsoluteUrl(raw.href)
-      if (!sourceUrl) continue
+      if (!sourceUrl || !isListingUrl(sourceUrl)) continue
 
       let description: string | undefined
       let addressText: string | undefined

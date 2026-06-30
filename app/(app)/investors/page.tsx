@@ -27,7 +27,7 @@ export default async function InvestorsPage() {
         <div>
           <h1 className="text-2xl font-semibold leading-tight text-foreground">Clientes</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie perfis de clientes/investidores e abra workspaces de aquisição centrados em cada cliente.
+            {(investors ?? []).length} cliente{(investors ?? []).length !== 1 ? 's' : ''} · Gerencie perfis de clientes/investidores e abra workspaces de aquisição centrados em cada cliente.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

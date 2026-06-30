@@ -55,7 +55,10 @@ export async function sendOmAction(
   const resend = createResendClient()
   const sendFromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@realtools.com.br'
 
+  if (!resend) return { status: 'error', message: 'Email não configurado. Verifique RESEND_API_KEY.' }
+
   let sent = 0
+  const errors: string[] = []
 
   for (const investor of investors) {
     if (!investor.email) continue
@@ -72,13 +75,16 @@ export async function sendOmAction(
       .select('tracking_token')
       .single() as { data: Pick<InvestorOmSendRow, 'tracking_token'> | null }
 
-    if (!sendRow) continue
+    if (!sendRow) {
+      errors.push(`${investor.name}: falha ao criar registro de envio`)
+      continue
+    }
 
     const omUrl = `${siteUrl}/om/listing/${listingId}?ref=${sendRow.tracking_token}`
     const pixelUrl = `${siteUrl}/api/track/${sendRow.tracking_token}`
     const address = listing.address_text ?? listing.location_text ?? [listing.city, listing.state].filter(Boolean).join(', ') ?? ''
 
-    if (resend) {
+    try {
       await resend.emails.send({
         from: sendFromEmail,
         to: investor.email,
@@ -91,15 +97,20 @@ export async function sendOmAction(
           omUrl,
           pixelUrl,
         }),
+        headers: {
+          'List-Unsubscribe': `<${siteUrl}/unsubscribe?email=${encodeURIComponent(investor.email)}>`,
+        },
       })
+      sent++
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'erro desconhecido'
+      errors.push(`${investor.name}: ${msg}`)
     }
-
-    sent++
   }
 
   revalidatePath(`/imoveis/${listingId}`)
 
-  if (sent === 0) return { status: 'error', message: 'Nenhum email enviado. Verifique se os investidores possuem email cadastrado.' }
+  if (sent === 0) return { status: 'error', message: `Nenhum email enviado.${errors.length > 0 ? ` Erros: ${errors[0]}` : ''}` }
   return { status: 'sent', count: sent }
 }
 
