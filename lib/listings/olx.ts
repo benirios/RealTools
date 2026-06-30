@@ -189,10 +189,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       .split(/\s+/)
       .filter((k) => k.length > 2) // Skip short words like "de", "ou"
 
-    const RESIDENTIAL_KEYWORDS = [
-      'apartamento', 'apto', 'quarto', 'bedroom', 'suite', 'studio',
-      'conjugado', 'kitnet', 'temporada', 'aluga-se',
-    ]
+    const isCommercialSearch = /comercial|ponto|loja|sala|galpao|galp|varejo|retail/i.test(target.searchTerm)
+    const RESIDENTIAL_KEYWORDS = ['apartamento', 'apto', 'quarto', 'bedroom', 'suite', 'studio', 'conjugado', 'kitnet']
 
     for (const raw of rawCards) {
       const sourceUrl = toAbsoluteUrl(raw.href)
@@ -206,8 +204,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         continue
       }
 
-      // Exclude residential listings when searching for commercial
-      if (RESIDENTIAL_KEYWORDS.some((kw) => titleLower.includes(kw))) {
+      // Only exclude residential if explicitly searching for commercial properties
+      if (isCommercialSearch && RESIDENTIAL_KEYWORDS.some((kw) => titleLower.includes(kw))) {
         continue
       }
 
