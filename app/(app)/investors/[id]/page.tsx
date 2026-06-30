@@ -845,7 +845,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
             key={item.value}
             href={tabHref(client.id, item.value)}
             className={cn(
-              'border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+              'border-b-2 px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap',
               tab === item.value
                 ? 'border-foreground text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
