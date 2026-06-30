@@ -190,6 +190,14 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       console.log('[olx] first card title:', rawCards[0].title)
       console.log('[olx] first card href:', rawCards[0].href)
     }
+    // Dump sample hrefs to find correct listing URL pattern
+    const sampleHrefs = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('a[href]'))
+        .map((a) => (a as HTMLAnchorElement).href)
+        .filter((h) => h.includes('olx.com.br') && !h.includes('#'))
+        .slice(0, 30)
+    )
+    console.log('[olx] sample hrefs:', JSON.stringify(sampleHrefs, null, 2))
 
     const drafts: ListingDraft[] = []
 
