@@ -59,8 +59,8 @@ function isListingUrl(url: string): boolean {
   try {
     const path = new URL(url).pathname
     if (NON_LISTING_PATHS.some((p) => path === p || path.startsWith(p + '/'))) return false
-    // Must have /item/ or be a deep /imoveis/ path (category slug + listing slug)
-    return path.includes('/item/') || (path.startsWith('/imoveis/') && path.split('/').length >= 4)
+    // OLX listing URLs always contain /item/ — category/browse pages do not
+    return path.includes('/item/')
   } catch {
     return false
   }
@@ -131,7 +131,7 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         '/cadastro', '/entrar', '/conta', '/perfil', '/ajuda', '/favoritos',
       ]
       const anchors = Array.from(
-        document.querySelectorAll<HTMLAnchorElement>('a[href*="/item/"], a[href*="/imoveis/"]')
+        document.querySelectorAll<HTMLAnchorElement>('a[href*="/item/"]')
       )
       const seen = new Set<string>()
 
@@ -142,10 +142,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
           try {
             const path = new URL(href).pathname
             if (BLOCKED.some((b) => path === b || path.startsWith(b + '/'))) return null
-            // Must be a listing: /item/... or deep /imoveis/ path (≥4 segments)
-            const isListing =
-              path.includes('/item/') || (path.startsWith('/imoveis/') && path.split('/').length >= 4)
-            if (!isListing) return null
+            // OLX listing URLs always contain /item/ — reject category/browse pages
+            if (!path.includes('/item/')) return null
           } catch {
             return null
           }
