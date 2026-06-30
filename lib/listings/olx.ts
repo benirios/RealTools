@@ -182,6 +182,17 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         .slice(0, limit)
     }, maxListings)
 
+    // Debug: log extraction result to diagnose empty results
+    const pageTitle = await page.title()
+    const pageUrl = page.url()
+    console.log('[olx] page title:', pageTitle)
+    console.log('[olx] page url:', pageUrl)
+    console.log('[olx] rawCards count:', rawCards.length)
+    if (rawCards.length > 0) {
+      console.log('[olx] first card title:', rawCards[0].title)
+      console.log('[olx] first card href:', rawCards[0].href)
+    }
+
     const drafts: ListingDraft[] = []
 
     const isCommercialSearch = /comercial|ponto|loja|sala|galpao|varejo|comercio/i.test(target.searchTerm)
