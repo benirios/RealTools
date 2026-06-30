@@ -100,7 +100,7 @@ export function InvestorsTable({ investors }: Props) {
 
       {filtered.length === 0 && search ? (
         <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-          Nenhum cliente encontrado para "{search}".
+          Nenhum cliente encontrado para &quot;{search}&quot;.
         </div>
       ) : (
         <>
