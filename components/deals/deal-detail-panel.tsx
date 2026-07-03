@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft, ExternalLink, FileText, Clock } from 'lucide-react'
 import { DealFormModal } from './deal-form-modal'
 import { DeleteDealDialog } from './delete-deal-dialog'
+import { NotesSection } from '@/components/notes/notes-section'
 import type { Database } from '@/types/supabase'
 
 type DealRow = Database['public']['Tables']['deals']['Row']
@@ -126,27 +127,9 @@ export function DealDetailPanel({
         )}
 
         {/* Notes */}
-        {notes.length > 0 && (
-          <div className="mb-5">
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
-              Notas ({notes.length})
-            </p>
-            <div className="space-y-2">
-              {notes.slice(0, 4).map((note) => (
-                <div key={note.id} className="flex gap-2.5 text-sm">
-                  <span
-                    className="mt-[7px] size-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: status.color }}
-                  />
-                  <span className="line-clamp-2 text-foreground/80">{note.content}</span>
-                </div>
-              ))}
-              {notes.length > 4 && (
-                <p className="pl-4 text-xs text-muted-foreground">+{notes.length - 4} notas</p>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="mb-5">
+          <NotesSection notes={notes} dealId={deal.id} />
+        </div>
 
         {/* Status selector */}
         <div className="mb-5">
