@@ -327,4 +327,256 @@ The "Now" roadmap in §6 *is* the LGPD compliance list — same fixes, Brazilian
 
 ---
 
+## 9. Impediment Workarounds
+
+This section provides practical, implementable workarounds for each major impediment identified above. Organized by severity and criticality.
+
+### Critical/Now (Security & Governance)
+
+**1. Service-role Supabase client bypasses RLS**
+- **Impediment:** Every investor/client action uses `createSupabaseServiceClient()`; mig 019 disabled RLS; one missed filter leaks cross-tenant data.
+- **Workaround:** Re-enable RLS with `user_id` policies as defence-in-depth. Minimum fallback: automated tests asserting every service-role query is tenant-scoped (add `.eq('user_id', userId)` on all investor/client queries).
+- **Notes:** Defence-in-depth approach requires no API changes; test-driven approach is fast to implement; migrate incrementally if RLS re-enablement is risky.
+
+**2. Latent undisclosed sub-processor (OpenRouter default)**
+- **Impediment:** Code defaults to `openrouter` / `google/gemini-flash-1.5` in `getDealSummaryProviderConfig()` while `.env.example` documents `gemini` — production may silently route through an undisclosed US intermediary.
+- **Workaround:** 
+  - Explicitly pin `AI_DEAL_SUMMARY_PROVIDER` env var in every deployment (dev, staging, prod).
+  - Reconcile `.env.example` with the actual production default.
+  - If keeping OpenRouter, add it to SUBPROCESSORS.md with full disclosure.
+  - Clean path: set `provider=gemini` to eliminate the OpenRouter hop entirely.
+- **Notes:** One-line config fix; test in staging before rolling to prod.
+
+**3. No privacy notice (LGPD Art 9; GDPR Art 13/14)**
+- **Impediment:** Brokers, investors, buyers, and scraped third parties receive zero disclosure of data processing, controller identity, purposes, retention, or rights.
+- **Workaround:**
+  - Draft consolidated **PT-BR Aviso de Privacidade** (~80% GDPR-ready by structure).
+  - Sections: controller identity (RealTools), purposes (CRM/deal management/opportunity matching), legal bases (legitimate interest + contract), sub-processors (Supabase, Clerk, Resend, Google, Gemini/OpenRouter, Vercel), retention policy (keyed to deal lifecycle), data-subject rights (DSAR, erasure, objection).
+  - Link in global footer + OM page footer + signup flow.
+  - Localise for Brazil + publish English version for EU-bound investors.
+- **Notes:** Resend-ready; Clerk dashboard supports privacy-URL config; no code changes needed for notices themselves.
+
+**4. AI prompt contents sent to US LLM with no verified no-training terms**
+- **Impediment:** Deal summaries sent to Google Gemini (consumer endpoint) / OpenRouter with no documented data-retention or training-exclusion guarantee; free tier may train on prompts.
+- **Workaround:**
+  - Move to **paid Gemini API tier** (or Vertex AI in US region) with contractual no-training/retention terms.
+  - Verify vendor SLAs: capture "no training" + retention policy in a Records-of-Processing table.
+  - If OpenRouter remains, pin models that explicitly disable training (most OpenRouter models have this, verify per model).
+  - Coarsen/anonymise prompt contents: strip `nearbyBusinesses[].name` to category-only; keep `investorName` nulled (already done).
+- **Notes:** Payload already minimised (investorName nulled pre-send); moving to paid tier is ~10–20 lines of config; high compliance gain for low effort.
+
+**5. No Records of Processing / sub-processor inventory**
+- **Impediment:** Processor chain is only discoverable by reading code; no Art 30 / LGPD Art 37 record exists; no transfer basis documented for any processor.
+- **Workaround:**
+  - Author one **SUBPROCESSORS.md** (or RoPA table) with one row per processor:
+    - **Name** | **Region** | **Data Categories** | **Purpose** | **Transfer Basis** | **Sub-processor of** | **DPA Status**
+    - Example row: `Supabase | us (default, pin to EU pre-launch) | all customer data (deals, investors, buyers) | Database + Auth + Storage | LGPD Art 33 / Brazil→US; prepped for GDPR Art 46 SCCs | RealTools (controller) | Pending execution`
+  - Include all observed processors: Supabase, Clerk, Resend, Google (Places, Gemini/Vertex), OpenRouter (if used), Nominatim/OpenStreetMap, Vercel (logs/deployment).
+  - Include backups + observability logs (both can carry PII).
+  - Version the document; make it part of the standard change-management process.
+- **Notes:** Low effort (~1–2 hours); doubles as LGPD Art 37 *registro das operações* and pre-work for GDPR Art 30 records on expansion; update on each new integration.
+
+---
+
+### High/Near-term (1–3 months)
+
+**6. Broker data transfers to US with no DPA**
+- **Impediment:** Clerk (identity), Supabase (all data), Resend (email), OpenRouter/Gemini (US), Vercel (logs) — each is a sub-processor with no executed Art 28 DPA or equivalent.
+- **Workaround:**
+  - Accept each vendor's **standard (click-through) DPA**, which typically incorporates SCCs.
+  - For LGPD Art 33: verify each DPA's **"cláusulas-padrão contratuais"** compliance (ANPD Resolução CD/ANPD nº 19/2024 equivalence).
+  - Author one **broker-facing DPA exhibit** that flows down sub-processor obligations (data categories, retention, security, breach notification) — template for all future broker tenants.
+  - Store executed DPAs in a shared compliance folder; track version + signature date.
+- **Notes:** Paperwork-heavy but zero code change; click-through acceptance is legally sufficient; many SaaS vendors auto-execute on TOS acceptance.
+
+**7. No OM email unsubscribe / opt-out**
+- **Impediment:** OM emails have no `List-Unsubscribe` header, no opt-out link, no suppression flag; violates Resend ToS + ePrivacy Art 13(2)–(4).
+- **Workaround:**
+  - Add to every OM email send:
+    - One-line unsubscribe link (e.g., "Clique aqui para não receber mais").
+    - `List-Unsubscribe` header per RFC 8058 (required by major ISPs + Resend best practice).
+    - Backend suppression flag: `investor_om_sends.suppression_status` = `'unsubscribed' | 'active' | 'bounced'`.
+    - Preface OM footer with: "Você pode gerenciar suas preferências de email [aqui](link)".
+  - Backend: skip OM sends for `suppression_status = 'unsubscribed'`.
+- **Notes:** ~20 lines of code; Resend SDK supports these headers natively; improves deliverability as bonus.
+
+**8. No retention schedule / erasure cascade**
+- **Impediment:** Notes, files, investor profiles, and deal data persist indefinitely; no TTL/purge logic; erasure is manual.
+- **Workaround:**
+  - Define a **retention schedule**:
+    - **Active deal:** retain all data (broker notes, files, investor profiles) for deal lifetime + 2 years post-close (compliance buffer).
+    - **Closed deal:** anonymise investor names/emails; retain only metadata (dates, amounts) for tax/audit.
+    - **Deleted broker account:** cascade delete via the `user.deleted` Clerk webhook; define 30-day grace period for recovery.
+  - Implement a **scheduled deletion job** (Supabase Cron or Vercel Cron function):
+    - Daily: find deals closed >2 years ago; run anonymisation/purge.
+    - Weekly: garbage-collect orphaned `storage` files (verify deletion, retry on failure).
+  - Document in **SUBPROCESSORS.md** + privacy notice.
+- **Notes:** Retention can be purpose-bound (active deals defensible; closed deals weak point); job can be a simple Node script in `/scripts/purge.js`; cron runs at minimal cost; test on staging first.
+
+**9. Free-text notes / investor profiles can capture sensitive data (Art 9 / LGPD Art 11)**
+- **Impediment:** `NoteSchema = z.string().min(1)` allows unconstrained personal/special-category data (health, financial vulnerability, etc.).
+- **Workaround:**
+  - Add in-product guidance: "Avoid storing sensitive personal data (health, race, criminal history, financial hardship). Use structured fields where available."
+  - Optional lightweight detection (not enforcement): flag notes containing patterns like "saúde", "histórico criminal", "renda" for manual review (broker-owned CRM, human-in-loop is acceptable).
+  - Document the **legitimate-interest basis** for free-text notes in privacy notice: "Broker CRM enables transaction management and lead prioritization — industry-standard practice with appropriate safeguards."
+  - LGPD Art 7(IX) base (legitimate interest) covers this; GDPR Art 6(1)(f) is available on expansion.
+- **Notes:** No schema change needed (free-text is inherent to CRM); basis exists, documentation is the gap; lightweight flagging is optional (trust brokers' judgment as default).
+
+---
+
+### Medium/Before EU Launch (3–6 months)
+
+**10. Controller vs. Processor topology unresolved**
+- **Impediment:** RealTools is a processor for broker-uploaded files/contacts but a controller in its own right for derived scoring, inferences, and open-tracking — dual-hat creates confusion on who owes Art 13/14 notices to investors.
+- **Workaround:**
+  - Document a **Data Flow & Control Matrix** (1-page table):
+    - **Data subject** | **Data category** | **Collection point** | **Purpose** | **Controller** | **Processor** | **Transparency responsibility**
+    - Example: Investor name+email: collected by broker, stored in RealTools, processed for match scoring → Controller: Broker | Processor: RealTools | Broker owes Art 14 notice (RealTools discloses via privacy notice + DPA).
+  - Apply **Art 26 joint-controller language** in the broker DPA for shared-purpose scenarios (e.g., both broker and RealTools benefit from match scores).
+  - Publish a **"Data Subject Guide for Investors"** explaining that their broker is the primary controller; RealTools is the tool; data rights (DSAR, erasure) flow through the broker.
+- **Notes:** Foundational governance fix; unblocks all transparency obligations; one table + one paragraph of DPA language suffices.
+
+**11. Clerk deletion orphans investor PII in Supabase**
+- **Impediment:** Clerk fires a user-deletion webhook, but mig 019 makes `user_id` the only tenant key; no cascade-delete defined; orphaned investor/buyer records persist.
+- **Workaround:**
+  - Implement **Svix-verified webhook** for `user.deleted`:
+    - Receive Clerk's deletion event.
+    - Trigger a DB transaction: delete all rows where `user_id = [deleted_user]` across `investors`, `buyers`, `opportunities`, `notes`, `listings`, `files` (check schema for completeness).
+    - Delete associated `storage` objects (files, images).
+    - Log the cascade operation for audit.
+  - Optionally: **anonymisation alternative** for brokers who want data recovery (30-day grace):
+    - Flag user as `deleted_at = NOW()` (soft delete).
+    - Anonymise PII: `email → SHA256(user_id) || "@deleted.local"`, `name → "Deleted User"`, etc.
+    - Hard-delete after 30 days if no recovery initiated.
+  - Add to privacy notice: "Upon account deletion, all associated data is deleted within 24 hours (or anonymised for 30 days if recovery is initiated)."
+- **Notes:** Webhook is standard Clerk pattern; Supabase webhook routing is low-latency; test recovery flow in staging; GDPR Art 17 compliant path.
+
+**12. Forwardable public OM link + open-tracking pixel**
+- **Impediment:** 
+  - OM URL is forwardable (`/om/...?ref=[token]`); if opened in EU, triggers Art 3(2)(b) territorial scope + ePrivacy Art 5(3).
+  - Open-tracking pixel fires without consent (ePrivacy Art 5(3) requires consent for analytics cookies/pixels).
+- **Workaround:**
+  - **Drop the pixel entirely** (secondary to URL-token tracking; removes ePrivacy exposure at zero product cost).
+  - **Add one-line disclosure** on OM page (PT-BR): "O remetente pode ver quando você abre este documento" (The sender may see when you open this document).
+  - **Add opt-out option**: checkbox in OM page footer: "Não rastrear quando abro este email" (Don't track when I open this email) → skips URL-parameter logging.
+  - Backend: on opt-out, strip `?ref=[token]` from links; fall back to anonymous open-counting (aggregate only, no per-recipient tracking).
+  - Document in privacy notice: "URL open-tracking is optional and can be disabled by recipients."
+- **Notes:** Pixel removal is one line of code; disclosure + opt-out are lightweight UI additions; URL tracking survives as a choice, ePrivacy exposure collapses; LGPD Art 9 now, GDPR post-expansion.
+
+**13. No break-out plan for AI Act Art 50 (on EU placement)**
+- **Impediment:** LLM deal summaries (GenAI feature) trigger Art 50 labelling requirement on EU market placement — currently untracked.
+- **Workaround:**
+  - **Watch-item (not an immediate fix):** Document in DPIA that LLM summaries require Art 50 transparency on EU expansion:
+    - Add to OM page + investor-facing notices: "This summary was generated by AI (Google Gemini) and may contain inaccuracies. Always verify with the property manager/broker."
+    - Tag summaries in the UI: "🤖 AI-generated summary" (visual indicator).
+  - **Before EU launch:** conduct a DPIA on the LLM feature specifically (accuracy, manipulation, fairness risks); Art 50 labelling is just the surface.
+- **Notes:** Watch-item now; no work needed until EU launch; pre-work is low-effort (labels + DPIA).
+
+---
+
+### Lower-priority / Nice-to-have (6–12 months)
+
+**14. Scraped seller PII (phone/name) persisted without notice**
+- **Impediment:** OLX listing scrape captures free-text bodies containing seller names/phone numbers; no seller consent/notice; potential Brazilian copyright issue.
+- **Workaround (Option A — Minimal):**
+  - Strip PII at ingestion: regex out phone patterns (`\d{2} 9\d{4}-\d{4}`, `\d{2} 3\d{4}-\d{4}`) and name-like patterns (proper nouns) from `description` field before storing.
+  - Keep only: `title`, structured fields (`property_type`, `bedrooms`, `price`), `description` (sanitized).
+  - Store full scrape in a temporary `raw_payload` but flag as "hold for 7 days then delete" (audit trail without long-term PII).
+  - Benefit: reduces Art 6(1)(f) + Art 14(5)(b) "disproportionate-effort" defence burden.
+- **Workaround (Option B — Comprehensive):**
+  - Move to **structured field extraction** (rule-based or lightweight ML): parse description into `bedrooms`, `bathrooms`, `amenities`, `condition` — zero free text = zero PII.
+  - Drop images stored server-side; keep as URL references to original OLX listing (preserves framing/linking defence under CJEU *Svensson* / *BestWater*).
+  - Benefit: also collapses any Art 35 "large-scale scraping" DPIA trigger; strengthens copyright position.
+- **Notes:** Option A is fast (~2–4 hours); Option B is higher-effort but future-proof; Option A is defensible under Art 14(5)(b); choose based on roadmap priority.
+
+**15. OSM/Nominatim used without attribution or User-Agent contact**
+- **Impediment:** OSMF Nominatim Usage Policy requires "© OpenStreetMap contributors" credit + a contact URL in User-Agent; RealTools UA is `RealTools/1.5` (no contact) — throttling/block risk.
+- **Workaround:**
+  - Update User-Agent: `RealTools/1.5 (+http://realtools.com.br)` (add contact URL).
+  - Add **OSM attribution** wherever OSM data is displayed to users:
+    - Map footer: "Map data © OpenStreetMap contributors".
+    - Cached demographics: "Location data sourced from OpenStreetMap".
+  - Verify attribution in staging; test with Nominatim public API to confirm no throttling.
+- **Notes:** One-line code change + UI text; contractual (ToS) not statutory; zero compliance risk if done; also improves SEO (attribution is valuable).
+
+**16. Indefinite Google Places caching (post-enablement)**
+- **Impediment:** Once a Google Maps API key is enabled, `raw_places` + `raw_geocode` can be cached indefinitely, violating Google ToS (only `place_id` permitted for long-term storage).
+- **Workaround:**
+  - **Before enabling key:** migrate to this pattern:
+    - Store only: `place_id`, `formatted_address` (derived), `lat/lng` (derived), metadata (last_refreshed).
+    - Drop: `raw_places` (full response), `raw_geocode` (full response).
+    - TTL: re-fetch every 30 days (`last_refreshed < NOW() - 30 days` triggers a refresh).
+    - Purge old data: cron job deletes geocodes older than 90 days (audit buffer).
+  - Verify Google ToS compliance at enablement.
+- **Notes:** Dormant today (no key configured); implement as guard-rail before key deployment; schema change is required but defensible.
+
+**17. No Encarregado (LGPD Art 41) or DPO (GDPR Art 37)**
+- **Impediment:** No named privacy/data-protection contact; breach notification and data-subject rights have no routing mechanism.
+- **Workaround:**
+  - **Designate an Encarregado** (LGPD Art 41): internal email (e.g., `legal@realtools.com.br`) or external DPA firm.
+  - Publish channel: "Contate nosso Encarregado de Dados: [email]" (footer + privacy notice).
+  - Document in compliance records: name, email, appointment date.
+  - **Optional (pre-EU launch):** assess mandatory Art 37 DPO designation: GDPR Art 37(1)(b) (systematic profiling + large-scale processing) + Art 37(1)(c) (core activity is systematic monitoring) — likely yes on expansion. Appoint same person/firm as Encarregado for efficiency.
+  - Encarregado/DPO duties: breach notification, DSAR routing, breach assessment, DPIA oversight.
+- **Notes:** Minimum cost (email + one line); high compliance credibility; consider external DPA firm if in-house capacity is constrained.
+
+**18. No breach-notification runbook**
+- **Impediment:** No process for LGPD Art 48 (notify ANPD + titulars within "short time") or GDPR Art 33/34 (72-hour notification).
+- **Workaround:**
+  - Draft a one-page **Breach Response SOP**:
+    1. **Detection:** Log alert received; capture incident ID, affected data categories, estimated scope.
+    2. **Assessment (within 24 hours):** Is it a breach (Art. 33 / LGPD Art 48)? (Confidentiality/integrity loss, *not* authorized access). RLS misconfiguration = HIGH confidence.
+    3. **Notification (within 72 hours for GDPR, "short time" for LGPD):** Draft notice to ANPD (PT-BR) + affected data subjects.
+    4. **Remediation:** Root-cause fix, re-enable RLS, verify no residual access.
+    5. **Documentation:** Keep incident log + notices for audit.
+  - Assign incident lead (e.g., Tech Lead) + notification owner (e.g., Legal/Privacy Lead).
+  - Test with a simulated RLS-bypass breach in staging (dry-run notification).
+- **Notes:** Procedural, not code; one page suffices; simulation is critical (ANPD favours evidence of readiness); test annually.
+
+---
+
+### Watch-items (Ongoing, no immediate work)
+
+**19. Mark all findings requiring EU triggers as "Monitored"**
+- A **tracker spreadsheet** (shared admin access):
+  - **Finding ID** | **Title** | **Trigger** | **Status** | **Target date** | **Owner**
+  - Mark all "On-expansion" findings as "Monitored — blocks EU launch".
+  - Update quarterly: did any trigger fire? (Art 3(1) EU tenant onboarded? Art 3(2) EU targeting detected?)
+  - Example: "Art 3(1) EU broker tenant" → no one at realtools.com.br? Mark green. Someone opens it? Shift to "In Progress" + kick off EU legal review.
+- **Notes:** Lightweight governance; prevents surprises.
+
+**20. AI Act Annex III creditworthiness-adjacency (watch, not a finding)**
+- The investor **risk classification** (`risk_level: "low" | "medium" | "high"`) is *adjacent* to Annex III §5 (creditworthiness scoring) but not identical (RealTools assigns risk by investor *goals* + *strategy*, not creditworthiness).
+- **Keep this distinction clear in code + UI:** `risk_level` is a broker-specified preference, not an automated creditworthiness score.
+- If future versions add "estimated net worth" or "likely LTV acceptance", revisit this as a potential Annex III trigger → heightened AI Act compliance.
+
+---
+
+## Summary Table: Impediments & Workarounds
+
+| # | Impediment | Severity | Criticality | Workaround (summary) | Est. Effort | Owner |
+|---|-----------|----------|------------|----------------------|------------|-------|
+| 1 | RLS disabled, app-layer isolation only | High | **NOW** | Re-enable RLS or add tenant-scoping tests | 1–2 weeks | Tech Lead |
+| 2 | OpenRouter undisclosed default | Medium | **NOW** | Pin env var, reconcile `.env.example` | 2 hours | DevOps + Lead Dev |
+| 3 | No privacy notice | Medium | **NOW** | Draft PT-BR Aviso de Privacidade | 1 week | Legal + Product |
+| 4 | AI prompt unverified no-training | Medium | **NOW** | Move to paid Gemini tier + document | 4 hours | Lead Dev |
+| 5 | No sub-processor inventory | Medium | **NOW** | Author SUBPROCESSORS.md | 2 hours | Legal + Tech Lead |
+| 6 | No broker DPA | Medium | **Now–1mo** | Execute vendor DPAs + broker exhibit | 1 week | Legal |
+| 7 | No OM email opt-out | Medium | **Now–1mo** | Add unsubscribe link + suppression flag | 4 hours | Lead Dev |
+| 8 | No retention schedule | Medium | **1–3 months** | Define retention + implement purge job | 1 week | Tech Lead + Legal |
+| 9 | Free-text notes can capture Art 9 data | Medium | **1–3 months** | Add guidance + document LI basis | 4 hours | Legal + Product |
+| 10 | Controller/processor topology unclear | High | **1–3 months** | Document Data Flow Matrix + DPA language | 4 hours | Legal |
+| 11 | Clerk deletion orphans PII | Medium | **1–3 months** | Implement `user.deleted` webhook cascade | 1 week | Lead Dev |
+| 12 | OM pixel + forwardable links | Low | **1–3 months** | Drop pixel, add disclosure + opt-out | 8 hours | Lead Dev + Legal |
+| 13 | AI Act Art 50 preparedness | Low | **3–6 months** | Add AI-generated label + DPIA watch | 2 hours | Legal |
+| 14 | Scraped seller PII persisted | Low | **3–6 months** | Strip PII at ingestion (Option A) | 4 hours | Lead Dev |
+| 15 | OSM attribution missing | Low | **3–6 months** | Update UA + add credits | 1 hour | Lead Dev |
+| 16 | Google Places caching (pre-key) | Low | **3–6 months** | Guard-rail: store `place_id` + TTL only | 1 week (pre-enablement) | Lead Dev |
+| 17 | No Encarregado / DPO | Medium | **1–3 months** | Designate + publish contact | 4 hours | Legal + HR |
+| 18 | No breach-notification runbook | Medium | **1–3 months** | Draft SOP + test simulation | 4 hours | Legal + Tech Lead |
+| 19 | Monitor EU-trigger fires | Low | **Ongoing** | Tracker spreadsheet, quarterly review | 1 hour/qtr | Legal |
+| 20 | AI Act Annex III watch-item | Low | **Ongoing** | Code review on risk_level changes | 0 hours (already tracked) | Tech Lead |
+
+---
+
 *Prepared as an internal risk-scoping artifact. Engage qualified EU and Brazilian (LGPD) counsel before relying on any conclusion herein.*
