@@ -1,7 +1,6 @@
 import 'server-only'
 import { enrichListingLocationInsight } from '@/lib/location-intelligence/api'
 import { scoreListingService } from '@/lib/scoring/service'
-import { calculateStrategyFitScoresForListingService } from '@/lib/scoring/strategy-fit-service'
 import { recalculateMatchesForListing } from '@/lib/investors/match-processing'
 import { generateAiDealSummary } from '@/lib/ai/deal-summary-service'
 import type { Database, Json } from '@/types/supabase'
@@ -115,12 +114,6 @@ export async function enrichScoreAndMatchListing(
     const scoring = await scoreListingService(supabase, userId, listingId, 'any')
     if (scoring.errors?.general?.[0]) throw new Error(scoring.errors.general[0])
 
-    const strategyFit = await calculateStrategyFitScoresForListingService(supabase, userId, listingId)
-    if (strategyFit.errors?.general?.[0]) {
-      await updateListingProcessing(supabase, userId, listingId, {
-        matching_error: strategyFit.errors.general[0],
-      })
-    }
     scored = true
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Não foi possível calcular os scores do imóvel.'

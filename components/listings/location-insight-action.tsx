@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Database, Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { enrichListingLocationAction, recalculateListingMatchesAction, recalculateListingStrategyScoresAction, seedDemoLocationInsightsAction } from '@/lib/actions/location-insight-actions'
+import { enrichListingLocationAction, recalculateListingMatchesAction, seedDemoLocationInsightsAction } from '@/lib/actions/location-insight-actions'
 import type { LocationInsightActionState } from '@/lib/schemas/location-insight'
 import { useRouter } from 'next/navigation'
 
@@ -18,7 +18,6 @@ export function LocationInsightAction({ listingId }: Props) {
   const [enrichPending, startEnrichTransition] = useTransition()
   const [demoPending, startDemoTransition] = useTransition()
   const [matchPending, startMatchTransition] = useTransition()
-  const [strategyPending, startStrategyTransition] = useTransition()
 
   const handleResult = (result: LocationInsightActionState) => {
     if (result.errors?.general?.[0]) {
@@ -67,22 +66,6 @@ export function LocationInsightAction({ listingId }: Props) {
         >
           {matchPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
           Recalcular matches
-        </Button>
-
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={strategyPending}
-          onClick={() => {
-            startStrategyTransition(async () => {
-              const result = await recalculateListingStrategyScoresAction(listingId)
-              handleResult(result)
-            })
-          }}
-        >
-          {strategyPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
-          Recalcular scores de estratégia
         </Button>
 
         <Button

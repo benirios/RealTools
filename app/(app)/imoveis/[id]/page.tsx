@@ -13,13 +13,12 @@ import { ListingInvestorMatches } from '@/components/listings/listing-investor-m
 import { LocationInsightAction } from '@/components/listings/location-insight-action'
 import { LocationInsightCard } from '@/components/listings/location-insight-card'
 import { OpportunityScoreCard } from '@/components/listings/opportunity-score-card'
-import { StrategyFitCard } from '@/components/listings/strategy-fit-card'
 import { ClientOpportunityNotesForm, ClientOpportunityPipelineActions } from '@/components/investors/client-workspace-actions'
 import { getListingLocationInsightByListingId } from '@/lib/location-intelligence/api'
 import { loadPersistedMatchesForListing, type PersistedListingMatch } from '@/lib/investors/match-processing'
 import { getAiSummaryJson, loadAiDealSummary } from '@/lib/ai/deal-summary-service'
 import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
-import { getScoreHistory, getStrategyFitScores } from '@/lib/scoring/data'
+import { getScoreHistory } from '@/lib/scoring/data'
 import { scoreRowToCardEntry } from '@/lib/scoring/score-card-ui'
 import { OmRecipientsCard } from '@/components/listings/om-recipients-card'
 import { getOmSendsForListingAction } from '@/lib/actions/om-actions'
@@ -130,7 +129,6 @@ function ClientOpportunityRecommendationView({
   reasoning,
   locationInsight,
   scoreEntries,
-  strategyFitRows,
   aiSummaryRow,
   aiSummary,
   omSends,
@@ -145,7 +143,6 @@ function ClientOpportunityRecommendationView({
   reasoning: string | null
   locationInsight: Awaited<ReturnType<typeof getListingLocationInsightByListingId>>
   scoreEntries: ScoreEntry[]
-  strategyFitRows: Awaited<ReturnType<typeof getStrategyFitScores>>
   aiSummaryRow: Awaited<ReturnType<typeof loadAiDealSummary>>
   aiSummary: AiDealSummary | null
   omSends: Awaited<ReturnType<typeof getOmSendsForListingAction>>
@@ -320,12 +317,6 @@ function ClientOpportunityRecommendationView({
             initialScores={scoreEntries}
           />
 
-          <StrategyFitCard
-            listingId={listing.id}
-            locationInsightAvailable={Boolean(locationInsight)}
-            initialScores={strategyFitRows}
-          />
-
           <AiDealSummaryCard
             listingId={listing.id}
             summaryRow={aiSummaryRow}
@@ -364,7 +355,6 @@ export default async function ImovelDetailPage({
   const locationInsight = await getListingLocationInsightByListingId(supabase, userId, id)
   const scoreRows = await getScoreHistory(supabase, userId, id)
   const scoreEntries = scoreRows.map(scoreRowToCardEntry)
-  const strategyFitRows = await getStrategyFitScores(supabase, userId, id)
   const investorMatches = await loadPersistedMatchesForListing(supabase, userId, id)
   const omSends = await getOmSendsForListingAction(id)
   const aiSummaryRow = await loadAiDealSummary(supabase, userId, id)
@@ -417,7 +407,6 @@ export default async function ImovelDetailPage({
         reasoning={reasoning}
         locationInsight={locationInsight}
         scoreEntries={scoreEntries}
-        strategyFitRows={strategyFitRows}
         aiSummaryRow={aiSummaryRow}
         aiSummary={aiSummary}
         omSends={omSends}
@@ -549,12 +538,6 @@ export default async function ImovelDetailPage({
         listingId={listing.id}
         locationInsightAvailable={Boolean(locationInsight)}
         initialScores={scoreEntries}
-      />
-
-      <StrategyFitCard
-        listingId={listing.id}
-        locationInsightAvailable={Boolean(locationInsight)}
-        initialScores={strategyFitRows}
       />
 
       <AiDealSummaryCard

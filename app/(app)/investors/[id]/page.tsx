@@ -151,21 +151,6 @@ function summaryConfidence(summary: AiDealSummary | null) {
   return labels[summary.confidence] ?? summary.confidence
 }
 
-function strategyFitForDeal(deal: MatchDeal, client: InvestorRow) {
-  const scores = deal.strategy_fit_scores ?? []
-  if (scores.length === 0) return null
-
-  const direct = client.strategy !== 'any'
-    ? scores.find((score) => score.strategy === client.strategy)
-    : null
-
-  return direct ?? [...scores].sort((a, b) => b.score - a.score)[0] ?? null
-}
-
-function strategyFitScore(match: PersistedInvestorMatch, client: InvestorRow) {
-  return strategyFitForDeal(match.deal, client)
-}
-
 function coordinateForMatch(match: PersistedInvestorMatch) {
   const lat = typeof match.deal.lat === 'number' ? match.deal.lat : match.deal.location_insight?.latitude
   const lng = typeof match.deal.lng === 'number' ? match.deal.lng : match.deal.location_insight?.longitude
@@ -386,7 +371,6 @@ function MatchOpportunityCard({
   summary: AiDealSummary | null
 }) {
   const status = normalizeStatus(clientOpportunity?.status)
-  const fit = strategyFitScore(match, client)
 
   return (
     <article className="rounded-md border border-border bg-card p-4">
@@ -401,9 +385,8 @@ function MatchOpportunityCard({
           <p className="mt-1 text-sm text-muted-foreground">{addressForMatch(match)}</p>
           <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{aiSnippet(summary)}</p>
         </div>
-        <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center">
+        <div className="grid min-w-[260px] grid-cols-2 gap-2 text-center">
           <MiniScore label="Universal" value={match.deal.opportunity_score ?? '-'} />
-          <MiniScore label="Fit estratégia" value={fit ? Math.round(fit.score) : '-'} />
           <MiniScore label="Cliente" value={`${match.match_score}%`} />
         </div>
       </div>
@@ -510,7 +493,6 @@ function PipelineTab({
               <span className="text-sm text-muted-foreground">{group.length} oportunidade{group.length === 1 ? '' : 's'}</span>
             </div>
             {group.map((item) => {
-              const fit = strategyFitForDeal(item.deal, client)
               const summary = summaries.get(item.deal.id) ?? null
               const matchScore = item.row.match_score ?? item.match?.match_score ?? null
               const lastUpdated = item.row.last_action_at ?? item.row.updated_at ?? item.row.created_at
@@ -536,9 +518,8 @@ function PipelineTab({
                         <span>Última atualização: {formatDateTime(lastUpdated)}</span>
                       </div>
                     </div>
-                    <div className="grid min-w-[280px] grid-cols-3 gap-2 text-center">
+                    <div className="grid min-w-[280px] grid-cols-2 gap-2 text-center">
                       <MiniScore label="Universal" value={item.deal.opportunity_score ?? '-'} />
-                      <MiniScore label="Fit estratégia" value={fit ? Math.round(fit.score) : '-'} />
                       <MiniScore label="Cliente" value={matchScore !== null ? `${matchScore}%` : '-'} />
                     </div>
                   </div>

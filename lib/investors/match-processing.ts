@@ -8,7 +8,6 @@ type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ListingRow = Database['public']['Tables']['listings']['Row']
 type LocationInsightRow = Database['public']['Tables']['location_insights']['Row']
 type OpportunityScoreRow = Database['public']['Tables']['opportunity_scores']['Row']
-type StrategyFitScoreRow = Database['public']['Tables']['strategy_fit_scores']['Row']
 type InvestorListingMatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
 
 import type { SupabaseLike } from '@/lib/supabase/types'
@@ -36,7 +35,6 @@ export type MatchDeal = Pick<
 > & {
   opportunity_score?: number | null
   location_insight?: LocationInsightRow | null
-  strategy_fit_scores?: StrategyFitScoreRow[]
 }
 
 export type PersistedInvestorMatch = InvestorDealMatch & {
@@ -108,11 +106,6 @@ export async function loadDeals(
     .in('listing_id', ids)
     .order('total_score', { ascending: false })
 
-  const { data: strategyScores } = await supabase.from('strategy_fit_scores')
-    .select('*')
-    .eq('user_id', userId)
-    .in('listing_id', ids)
-
   const insightByListing = new Map<string, LocationInsightRow>()
   for (const insight of ((insights ?? []) as LocationInsightRow[])) {
     if (insight.listing_id && !insightByListing.has(insight.listing_id)) {
@@ -125,13 +118,6 @@ export async function loadDeals(
     if (score.strategy_slug === 'any' || !scoreByListing.has(score.listing_id)) {
       scoreByListing.set(score.listing_id, score)
     }
-  }
-
-  const strategyScoresByListing = new Map<string, StrategyFitScoreRow[]>()
-  for (const score of ((strategyScores ?? []) as StrategyFitScoreRow[])) {
-    const current = strategyScoresByListing.get(score.listing_id) ?? []
-    current.push(score)
-    strategyScoresByListing.set(score.listing_id, current)
   }
 
   return rows.map((listing) => {
@@ -159,7 +145,6 @@ export async function loadDeals(
       description: listing.description,
       opportunity_score: score?.total_score ?? null,
       location_insight: insightByListing.get(listing.id) ?? null,
-      strategy_fit_scores: strategyScoresByListing.get(listing.id) ?? [],
     }
   })
 }

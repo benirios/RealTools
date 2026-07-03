@@ -9,7 +9,6 @@ import { loadListingForUser } from '@/lib/location-intelligence/api'
 import { recalculateMatchesForListing } from '@/lib/investors/match-processing'
 import { enrichScoreAndMatchListing } from '@/lib/listings/processing'
 import { scoreListingService } from '@/lib/scoring/service'
-import { calculateStrategyFitScoresForListingService } from '@/lib/scoring/strategy-fit-service'
 import type { LocationInsightActionState } from '@/lib/schemas/location-insight'
 
 function errorState(message: string): LocationInsightActionState {
@@ -49,9 +48,6 @@ export async function seedDemoLocationInsightsAction(listingId: string): Promise
   const scoring = await scoreListingService(supabase, userId, listingId, 'any')
   if (scoring.errors?.general?.[0]) return errorState(scoring.errors.general[0])
 
-  const strategyFit = await calculateStrategyFitScoresForListingService(supabase, userId, listingId)
-  if (strategyFit.errors?.general?.[0]) return errorState(strategyFit.errors.general[0])
-
   const matching = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (matching.error) return errorState(matching.error)
 
@@ -75,22 +71,4 @@ export async function recalculateListingMatchesAction(listingId: string): Promis
   revalidatePath('/decision-surface')
   revalidatePath('/investors')
   return successState(`${result.matchedCount} matches recalculados para este imóvel.`)
-}
-
-export async function recalculateListingStrategyScoresAction(listingId: string): Promise<LocationInsightActionState> {
-  const { userId } = await auth()
-  if (!userId) redirect('/auth/login')
-
-  const supabase = createSupabaseServiceClient()
-  const result = await calculateStrategyFitScoresForListingService(supabase, userId, listingId)
-  if (result.errors?.general?.[0]) return errorState(result.errors.general[0])
-
-  const matching = await recalculateMatchesForListing(supabase, userId, listingId, true)
-  if (matching.error) return errorState(matching.error)
-
-  revalidatePath('/imoveis')
-  revalidatePath(`/imoveis/${listingId}`)
-  revalidatePath('/decision-surface')
-  revalidatePath('/investors')
-  return successState('Scores de estratégia e matches recalculados.')
 }

@@ -58,12 +58,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
     .eq('user_id', userId)
     .in('listing_id', listingIds) : { data: [] }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: strategyScores } = listingIds.length ? await (supabase.from('strategy_fit_scores') as any)
-    .select('*')
-    .eq('user_id', userId)
-    .in('listing_id', listingIds) : { data: [] }
-
   const scoreByListing = new Map<string, Record<string, unknown>>()
   for (const score of (scores ?? []) as Record<string, unknown>[]) {
     const listingId = String(score.listing_id)
@@ -71,13 +65,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
 
   const insightByListing = new Map((insights ?? []).map((insight: Record<string, unknown>) => [String(insight.listing_id), insight]))
-  const strategyScoresByListing = new Map<string, Record<string, unknown>[]>()
-  for (const score of (strategyScores ?? []) as Record<string, unknown>[]) {
-    const listingId = String(score.listing_id)
-    const current = strategyScoresByListing.get(listingId) ?? []
-    current.push(score)
-    strategyScoresByListing.set(listingId, current)
-  }
 
   const enrichedListings = normalizedListings.map((listing: Record<string, unknown>) => {
     const listingId = String(listing.id)
@@ -86,7 +73,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
       ...listing,
       opportunity_score: typeof score?.total_score === 'number' ? score.total_score : null,
       location_insight: insightByListing.get(listingId) ?? null,
-      strategy_fit_scores: strategyScoresByListing.get(listingId) ?? [],
     }
   })
 
