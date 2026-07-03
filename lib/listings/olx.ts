@@ -59,11 +59,35 @@ function isListingUrl(url: string): boolean {
   try {
     const path = new URL(url).pathname
     if (NON_LISTING_PATHS.some((p) => path === p || path.startsWith(p + '/'))) return false
-    // OLX listing URLs always contain /item/ — category/browse pages do not
-    return path.includes('/item/')
+    // Listing URLs either use /item/... (some categories) or end in a long numeric ID —
+    // real imóveis URLs are {uf}.olx.com.br/{region}/{category}/{slug}-<id>, no /item/ segment
+    return path.includes('/item/') || /-\d{6,}\/?$/.test(path)
   } catch {
     return false
   }
+}
+
+const SEARCH_TERM_STOPWORDS = new Set([
+  'de', 'da', 'do', 'das', 'dos', 'em', 'para', 'com', 'sem', 'um', 'uma',
+  'e', 'ou', 'no', 'na', 'a', 'o',
+])
+
+const COMBINING_DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g')
+
+function stripAccents(value: string) {
+  return value.normalize('NFD').replace(COMBINING_DIACRITICS, '')
+}
+
+function tokenizeSearchTerm(searchTerm: string): string[] {
+  return stripAccents(searchTerm.toLowerCase())
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 2 && !SEARCH_TERM_STOPWORDS.has(token))
+}
+
+function titleMatchesSearchTerm(titleLower: string, tokens: string[]): boolean {
+  if (tokens.length === 0) return true
+  const normalizedTitle = stripAccents(titleLower)
+  return tokens.some((token) => normalizedTitle.includes(token))
 }
 
 export function buildOlxSearchUrl(target: OlxTarget) {
@@ -124,15 +148,14 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
       )
       .catch(() => {})
 
+    const rawCardLimit = Math.min(maxListings * 6, 150)
     const rawCards = await page.evaluate((limit) => {
       const BLOCKED = [
         '/minhas-compras', '/minhas-vendas', '/notificacoes', '/chat',
         '/meus-anuncios', '/plano-profissional', '/pagina-inicial',
         '/cadastro', '/entrar', '/conta', '/perfil', '/ajuda', '/favoritos',
       ]
-      const anchors = Array.from(
-        document.querySelectorAll<HTMLAnchorElement>('a[href*="/item/"]')
-      )
+      const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]'))
       const seen = new Set<string>()
 
       return anchors
@@ -142,8 +165,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
           try {
             const path = new URL(href).pathname
             if (BLOCKED.some((b) => path === b || path.startsWith(b + '/'))) return null
-            // OLX listing URLs always contain /item/ — reject category/browse pages
-            if (!path.includes('/item/')) return null
+            // Listing URLs either use /item/... or end in a long numeric ID (imóveis pattern)
+            if (!path.includes('/item/') && !/-\d{6,}\/?$/.test(path)) return null
           } catch {
             return null
           }
@@ -178,42 +201,33 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         })
         .filter((item): item is NonNullable<typeof item> => Boolean(item?.href && item.title))
         .slice(0, limit)
-    }, maxListings)
-
-    // Debug: log extraction result to diagnose empty results
-    const pageTitle = await page.title()
-    const pageUrl = page.url()
-    console.log('[olx] page title:', pageTitle)
-    console.log('[olx] page url:', pageUrl)
-    console.log('[olx] rawCards count:', rawCards.length)
-    if (rawCards.length > 0) {
-      console.log('[olx] first card title:', rawCards[0].title)
-      console.log('[olx] first card href:', rawCards[0].href)
-    }
-    // Dump sample hrefs to find correct listing URL pattern
-    const sampleHrefs = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('a[href]'))
-        .map((a) => (a as HTMLAnchorElement).href)
-        .filter((h) => h.includes('olx.com.br') && !h.includes('#'))
-        .slice(0, 30)
-    )
-    console.log('[olx] sample hrefs:', JSON.stringify(sampleHrefs, null, 2))
+    }, rawCardLimit)
 
     const drafts: ListingDraft[] = []
 
     const isCommercialSearch = /comercial|ponto|loja|sala|galpao|varejo|comercio/i.test(target.searchTerm)
     const RESIDENTIAL_TITLE_KEYWORDS = ['apartamento', 'apto', ' quarto', 'bedroom', 'suite', 'studio', 'conjugado', 'kitnet']
+    const searchTokens = tokenizeSearchTerm(target.searchTerm)
 
-    for (const raw of rawCards) {
+    const candidates = rawCards.filter((raw) => {
       const sourceUrl = toAbsoluteUrl(raw.href)
-      if (!sourceUrl || !isListingUrl(sourceUrl)) continue
+      if (!sourceUrl || !isListingUrl(sourceUrl)) return false
 
       const titleLower = (raw.title ?? '').toLowerCase()
 
+      if (!titleMatchesSearchTerm(titleLower, searchTokens)) return false
+
       // For commercial searches: exclude clear residential listings by title only
       if (isCommercialSearch && RESIDENTIAL_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) {
-        continue
+        return false
       }
+
+      return true
+    })
+
+    for (const raw of candidates.slice(0, maxListings)) {
+      const sourceUrl = toAbsoluteUrl(raw.href)
+      if (!sourceUrl) continue
 
       let description: string | undefined
       let addressText: string | undefined
