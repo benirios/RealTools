@@ -172,7 +172,10 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
           }
           seen.add(href)
 
-          const container = anchor.closest('section, article, li, div') ?? anchor
+          // Prefer the outer card wrapper (<section>) — the immediate ancestor
+          // is often a narrower <div> holding only the title, missing the
+          // price/location/date text that lives one or more levels further up.
+          const container = anchor.closest('section') ?? anchor.closest('article, li, div') ?? anchor
           const text = container.textContent?.replace(/\s+/g, ' ').trim() ?? ''
           const title =
             anchor.getAttribute('title') ||
