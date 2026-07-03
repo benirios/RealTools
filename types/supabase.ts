@@ -762,6 +762,10 @@ export type Database = {
           country: string
           created_at: string | null
           description: string | null
+          description_organized: Json | null
+          description_organized_error: string | null
+          description_organized_hash: string | null
+          description_organized_status: string
           enrichment_error: string | null
           enrichment_last_processed_at: string | null
           enrichment_status: string
@@ -798,6 +802,10 @@ export type Database = {
           country?: string
           created_at?: string | null
           description?: string | null
+          description_organized?: Json | null
+          description_organized_error?: string | null
+          description_organized_hash?: string | null
+          description_organized_status?: string
           enrichment_error?: string | null
           enrichment_last_processed_at?: string | null
           enrichment_status?: string
@@ -834,6 +842,10 @@ export type Database = {
           country?: string
           created_at?: string | null
           description?: string | null
+          description_organized?: Json | null
+          description_organized_error?: string | null
+          description_organized_hash?: string | null
+          description_organized_status?: string
           enrichment_error?: string | null
           enrichment_last_processed_at?: string | null
           enrichment_status?: string

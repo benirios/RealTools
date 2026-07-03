@@ -18,6 +18,8 @@ import { getListingLocationInsightByListingId } from '@/lib/location-intelligenc
 import { loadPersistedMatchesForListing, type PersistedListingMatch } from '@/lib/investors/match-processing'
 import { getAiSummaryJson, loadAiDealSummary } from '@/lib/ai/deal-summary-service'
 import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
+import { getOrganizedDescriptionJson } from '@/lib/ai/description-organizer-service'
+import type { OrganizedDescription } from '@/lib/ai/description-organizer-schema'
 import { getScoreHistory } from '@/lib/scoring/data'
 import { scoreRowToCardEntry } from '@/lib/scoring/score-card-ui'
 import { OmRecipientsCard } from '@/components/listings/om-recipients-card'
@@ -126,6 +128,7 @@ function ClientOpportunityRecommendationView({
   location,
   images,
   description,
+  organizedDescription,
   reasoning,
   locationInsight,
   scoreEntries,
@@ -140,6 +143,7 @@ function ClientOpportunityRecommendationView({
   location: string
   images: string[]
   description: string | null
+  organizedDescription: OrganizedDescription | null
   reasoning: string | null
   locationInsight: Awaited<ReturnType<typeof getListingLocationInsightByListingId>>
   scoreEntries: ScoreEntry[]
@@ -288,7 +292,7 @@ function ClientOpportunityRecommendationView({
           <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="space-y-5 border-t border-border p-5">
-          {description && <ListingDescription title={listing.title} description={description} />}
+          {description && <ListingDescription title={listing.title} description={description} organized={organizedDescription} />}
           {reasoning && (
             <div className="rounded-md border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Análise de classificação</p>
@@ -389,6 +393,7 @@ export default async function ImovelDetailPage({
   const isCloudflareBlock = (text: string | null) =>
     !!text && (text.includes('Please enable cookies') || text.includes('Cloudflare Ray ID'))
   const description = isCloudflareBlock(listing.description) ? null : listing.description
+  const organizedDescription = getOrganizedDescriptionJson(listing)
   const reasoning = isCloudflareBlock(listing.reasoning) ? null : listing.reasoning
   const clientMatch = clientContext
     ? investorMatches.find((match) => match.investor.id === clientContext.client.id)
@@ -404,6 +409,7 @@ export default async function ImovelDetailPage({
         location={location}
         images={images}
         description={description}
+        organizedDescription={organizedDescription}
         reasoning={reasoning}
         locationInsight={locationInsight}
         scoreEntries={scoreEntries}
@@ -470,7 +476,7 @@ export default async function ImovelDetailPage({
         {images.length > 0 && <ListingImages images={images} />}
 
         {description && (
-          <ListingDescription title={listing.title} description={description} />
+          <ListingDescription title={listing.title} description={description} organized={organizedDescription} />
         )}
 
         {reasoning && (

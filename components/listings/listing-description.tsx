@@ -1,12 +1,14 @@
+import type { OrganizedDescription } from '@/lib/ai/description-organizer-schema'
+
 type ListingDescriptionProps = {
   title: string
   description: string
+  organized?: OrganizedDescription | null
 }
 
 type SegmentedDescription = {
   paragraphs: string[]
   details: string[]
-  contacts: string[]
   references: string[]
 }
 
@@ -113,21 +115,11 @@ function extractReferences(value: string) {
   return { text, references: unique(references) }
 }
 
-function extractContacts(value: string) {
-  const sentences = sentenceSplit(value)
-  const contacts: string[] = []
-  const body: string[] = []
+function stripContactSentences(value: string) {
   const contactPattern = /(whats?app|telefone|contato|ligar|falar|ver número|\(?\d{2}\)?[\s.-]*9?[\s.-]*\d{4}[\s.-]*\d{4})/i
-
-  for (const sentence of sentences) {
-    if (contactPattern.test(sentence)) contacts.push(sentence)
-    else body.push(sentence)
-  }
-
-  return {
-    text: body.join(' '),
-    contacts: unique(contacts),
-  }
+  return sentenceSplit(value)
+    .filter((sentence) => !contactPattern.test(sentence))
+    .join(' ')
 }
 
 function extractDetails(value: string) {
@@ -154,14 +146,13 @@ function segmentDescription(description: string, title: string): SegmentedDescri
   if (!clean) return null
 
   const withoutReferences = extractReferences(clean)
-  const withoutContacts = extractContacts(withoutReferences.text)
-  const details = extractDetails(withoutContacts.text)
-  const paragraphs = paragraphize(withoutContacts.text)
+  const withoutContacts = stripContactSentences(withoutReferences.text)
+  const details = extractDetails(withoutContacts)
+  const paragraphs = paragraphize(withoutContacts)
 
   if (
     paragraphs.length === 0 &&
     details.length === 0 &&
-    withoutContacts.contacts.length === 0 &&
     withoutReferences.references.length === 0
   ) {
     return null
@@ -170,7 +161,6 @@ function segmentDescription(description: string, title: string): SegmentedDescri
   return {
     paragraphs,
     details,
-    contacts: withoutContacts.contacts,
     references: withoutReferences.references,
   }
 }
@@ -187,7 +177,31 @@ function SectionList({ items }: { items: string[] }) {
   )
 }
 
-export function ListingDescription({ title, description }: ListingDescriptionProps) {
+export function ListingDescription({ title, description, organized }: ListingDescriptionProps) {
+  if (organized && organized.paragraphs.length > 0) {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Descrição</p>
+          <div className="space-y-3">
+            {organized.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-sm leading-relaxed text-foreground">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+
+        {organized.highlights.length > 0 && (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Destaques</p>
+            <SectionList items={organized.highlights} />
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const segmented = segmentDescription(description, title)
 
   if (!segmented) return null
@@ -209,13 +223,6 @@ export function ListingDescription({ title, description }: ListingDescriptionPro
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Detalhes mencionados</p>
           <SectionList items={segmented.details} />
-        </div>
-      )}
-
-      {segmented.contacts.length > 0 && (
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Contato mencionado</p>
-          <SectionList items={segmented.contacts} />
         </div>
       )}
 
