@@ -133,6 +133,7 @@ function ClientOpportunityRecommendationView({
   strategyFitRows,
   aiSummaryRow,
   aiSummary,
+  omSends,
 }: {
   listing: ListingRow
   client: InvestorRow
@@ -147,6 +148,7 @@ function ClientOpportunityRecommendationView({
   strategyFitRows: Awaited<ReturnType<typeof getStrategyFitScores>>
   aiSummaryRow: Awaited<ReturnType<typeof loadAiDealSummary>>
   aiSummary: AiDealSummary | null
+  omSends: Awaited<ReturnType<typeof getOmSendsForListingAction>>
 }) {
   const status = normalizeClientStatus(clientOpportunity?.status)
   const fitScore = clientOpportunity?.match_score ?? clientMatch?.match_score ?? scoreEntries[0]?.result.totalScore ?? null
@@ -272,6 +274,13 @@ function ClientOpportunityRecommendationView({
           />
         </div>
       </section>
+
+      <OmRecipientsCard
+        listingId={listing.id}
+        listingTitle={listing.title}
+        matches={clientMatch ? [clientMatch] : []}
+        initialSends={omSends}
+      />
 
       <details className="group rounded-md border border-border bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
@@ -411,6 +420,7 @@ export default async function ImovelDetailPage({
         strategyFitRows={strategyFitRows}
         aiSummaryRow={aiSummaryRow}
         aiSummary={aiSummary}
+        omSends={omSends}
       />
     )
   }
