@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
-import { ClearImportRunsButton, OlxSearchImportForm, SeedDefaultTargetsButton } from '@/components/listings/import-actions'
+import { ClearImportRunsButton, CreateImportTargetForm, OlxSearchImportForm, SeedDefaultTargetsButton } from '@/components/listings/import-actions'
 import { ImportRunsTable, type ImportRun } from '@/components/listings/import-runs-table'
 import { ImportTargetsTable, type ImportTarget } from '@/components/listings/import-targets-table'
 import { PageContent } from '@/components/page-content'
@@ -84,6 +84,7 @@ export default async function ListingImportPage() {
           </div>
           <SeedDefaultTargetsButton />
         </div>
+        <CreateImportTargetForm />
         <ImportTargetsTable targets={targets} />
       </section>
 

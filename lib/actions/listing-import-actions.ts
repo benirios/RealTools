@@ -9,6 +9,7 @@ import { upsertListing, upsertListingImportTarget } from '@/lib/listings/ingesti
 import { scrapeOlxListings } from '@/lib/listings/olx'
 import { DEFAULT_LISTING_IMPORT_TARGETS } from '@/lib/listings/constants'
 import { processImportRunListings } from '@/lib/listings/processing'
+import { ListingImportTargetSchema } from '@/lib/schemas/listing'
 import type { Database, Json } from '@/types/supabase'
 
 type ListingImportTargetRow = Database['public']['Tables']['listing_import_targets']['Row']
@@ -21,6 +22,16 @@ export type ImportActionResult = {
 export type OlxSearchImportState = {
   errors?: {
     locationQuery?: string[]
+    searchTerm?: string[]
+    general?: string[]
+  }
+  message?: string
+}
+
+export type CreateImportTargetState = {
+  errors?: {
+    state?: string[]
+    city?: string[]
     searchTerm?: string[]
     general?: string[]
   }
@@ -224,4 +235,76 @@ export async function seedDefaultImportTargetsAction(): Promise<ImportActionResu
     ok: saved > 0,
     message: saved > 0 ? `${saved} alvos padrão prontos.` : 'Nenhum alvo padrão foi salvo.',
   }
+}
+
+export async function createImportTargetAction(
+  _prevState: CreateImportTargetState,
+  formData: FormData
+): Promise<CreateImportTargetState> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const parsed = ListingImportTargetSchema.safeParse({
+    source: String(formData.get('source') ?? 'olx'),
+    country: String(formData.get('country') ?? 'BR').trim() || 'BR',
+    state: String(formData.get('state') ?? '').trim().toUpperCase(),
+    city: String(formData.get('city') ?? '').trim(),
+    searchTerm: String(formData.get('searchTerm') ?? '').trim(),
+    isActive: true,
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+    return {
+      errors: {
+        state: fieldErrors.state,
+        city: fieldErrors.city,
+        searchTerm: fieldErrors.searchTerm,
+      },
+    }
+  }
+
+  const supabase = createSupabaseServiceClient()
+  const { error } = await upsertListingImportTarget(supabase, userId, parsed.data)
+
+  if (error) {
+    return { errors: { general: ['Não foi possível salvar o alvo de importação.'] } }
+  }
+
+  revalidatePath('/listings/import')
+  return { message: 'Alvo de importação criado.' }
+}
+
+export async function deleteImportTargetAction(targetId: string): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listing_import_targets') as any)
+    .delete()
+    .eq('id', targetId)
+    .eq('user_id', userId)
+
+  if (error) return { ok: false, message: 'Falha ao remover o alvo de importação.' }
+
+  revalidatePath('/listings/import')
+  return { ok: true, message: 'Alvo de importação removido.' }
+}
+
+export async function toggleImportTargetAction(targetId: string, nextActive: boolean): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listing_import_targets') as any)
+    .update({ is_active: nextActive, updated_at: new Date().toISOString() })
+    .eq('id', targetId)
+    .eq('user_id', userId)
+
+  if (error) return { ok: false, message: 'Falha ao atualizar o alvo de importação.' }
+
+  revalidatePath('/listings/import')
+  return { ok: true, message: nextActive ? 'Alvo ativado.' : 'Alvo desativado.' }
 }
