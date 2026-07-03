@@ -104,6 +104,7 @@ function createGeminiProvider(model: string): DealSummaryProvider {
               generationConfig: {
                 temperature,
                 responseMimeType: 'application/json',
+                maxOutputTokens: 1024,
               },
             }),
           }
@@ -146,6 +147,7 @@ function createOpenRouterProvider(model: string): DealSummaryProvider {
           body: JSON.stringify({
             model,
             temperature,
+            max_tokens: 1024,
             messages: [{ role: 'user', content: buildPrompt(input) }],
             response_format: { type: 'json_object' },
           }),
