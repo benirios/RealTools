@@ -36,13 +36,14 @@ test('coordinate passthrough skips provider lookup', async () => {
   assert.equal(result.confidence, 100)
 })
 
-test('address geocoding falls back to mock recognition', async () => {
+test('address geocoding falls back to mock recognition when mock is explicitly allowed', async () => {
   // Pass fetchImpl returning empty array so Nominatim finds no results → mock fallback
   const result = await geocodeLocation({
     address: 'Boa Viagem',
     city: 'Recife',
     state: 'PE',
   }, {
+    allowMock: true,
     fetchImpl: async () => ({ ok: true, json: async () => [] }),
   })
 
@@ -51,6 +52,18 @@ test('address geocoding falls back to mock recognition', async () => {
   assert.equal(result.state, 'PE')
   assert.ok(result.latitude !== null)
   assert.ok(result.longitude !== null)
+})
+
+test('address geocoding returns null instead of fabricating data when mock is not allowed', async () => {
+  const result = await geocodeLocation({
+    address: 'Endereço que não existe em lugar nenhum',
+    city: 'Cidade Inexistente',
+    state: 'ZZ',
+  }, {
+    fetchImpl: async () => ({ ok: true, json: async () => [] }),
+  })
+
+  assert.equal(result, null)
 })
 
 test('nominatim geocoding resolves direct address search', async () => {
@@ -98,6 +111,7 @@ test('provider timeout falls back cleanly', async () => {
       state: 'ST',
     },
     {
+      allowMock: true,
       googleMapsApiKey: 'demo-key',
       fetchImpl: (_url, { signal }) =>
         new Promise((resolve, reject) => {
@@ -168,6 +182,7 @@ test('demographic fallback returns mock values', async () => {
     city: 'Curitiba',
     state: 'PR',
   }, {
+    allowMock: true,
     fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }),
   })
 
@@ -210,6 +225,7 @@ test('confidence is reduced for fallback-only enrichment', async () => {
     city: 'Cidade',
     state: 'ST',
   }, {
+    allowMock: true,
     fetchImpl: async (url) => {
       if (String(url).includes('nominatim')) return { ok: true, json: async () => [] }
       return { ok: false, status: 500, json: async () => ({}) }
@@ -221,6 +237,23 @@ test('confidence is reduced for fallback-only enrichment', async () => {
   assert.equal(result.providers.demographics, 'mock')
   assert.equal(result.providers.places, 'unavailable')
   assert.equal(result.nearbyBusinesses.length, 0)
+})
+
+test('resolveLocationIntelligence reports not-found instead of fabricating an insight', async () => {
+  const result = await resolveLocationIntelligence({
+    address: 'Lugar sem referência',
+    city: 'Cidade',
+    state: 'ST',
+  }, {
+    fetchImpl: async (url) => {
+      if (String(url).includes('nominatim')) return { ok: true, json: async () => [] }
+      return { ok: false, status: 500, json: async () => ({}) }
+    },
+  })
+
+  assert.equal(result.notFound, true)
+  assert.equal(result.city, null)
+  assert.equal(result.state, null)
 })
 
 test('insert mapping preserves structured enrichment fields', () => {
@@ -483,6 +516,9 @@ test('resolve standalone insight returns a valid payload without persistence', a
     city: 'Recife',
     state: 'PE',
     country: 'BR',
+  }, {
+    allowMock: true,
+    fetchImpl: async () => ({ ok: true, json: async () => [] }),
   })
 
   assert.equal(typeof insight.id, 'string')

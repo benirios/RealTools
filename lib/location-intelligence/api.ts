@@ -21,6 +21,8 @@ type ListingRow = Database['public']['Tables']['listings']['Row']
 
 export const CreateLocationInsightBodySchema = LocationInsightInputSchema
 
+export const ADDRESS_NOT_FOUND_ERROR = 'Endereço não encontrado. Verifique o endereço, bairro ou cidade informados.'
+
 const ListingLocationInputSchema = z.object({
   listingId: z.string().uuid(),
 })
@@ -84,14 +86,19 @@ export function buildEphemeralLocationInsight(
 }
 
 export async function resolveStandaloneLocationInsight(
-  input: LocationInsightInput
+  input: LocationInsightInput,
+  options: Record<string, unknown> = {}
 ): Promise<LocationInsightPersisted> {
   const parsed = CreateLocationInsightBodySchema.safeParse(input)
   if (!parsed.success) {
     throw new Error('Payload de inteligência local inválido.')
   }
 
-  const resolved = await resolveLocationIntelligence(parsed.data)
+  const resolved = await resolveLocationIntelligence(parsed.data, options)
+  if (resolved.notFound) {
+    throw new Error(ADDRESS_NOT_FOUND_ERROR)
+  }
+
   return buildEphemeralLocationInsight(
     '00000000-0000-0000-0000-000000000000',
     resolved as Parameters<typeof buildEphemeralLocationInsight>[1]
@@ -109,6 +116,10 @@ export async function persistStandaloneLocationInsight(
   }
 
   const resolved = await resolveLocationIntelligence(parsed.data)
+  if (resolved.notFound) {
+    return { data: null, error: ADDRESS_NOT_FOUND_ERROR }
+  }
+
   return createLocationInsight(supabase, userId, resolved)
 }
 
@@ -162,6 +173,10 @@ export async function enrichListingLocationInsight(
   }
 
   const resolved = await resolveLocationIntelligence(buildListingLocationInput(listing))
+  if (resolved.notFound) {
+    return { data: null, error: ADDRESS_NOT_FOUND_ERROR }
+  }
+
   return upsertLocationInsightForListing(supabase, userId, listing.id, resolved)
 }
 

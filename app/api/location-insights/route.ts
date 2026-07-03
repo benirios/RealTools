@@ -5,6 +5,7 @@ import {
   persistStandaloneLocationInsight,
   resolveStandaloneLocationInsight,
   normalizeCreateLocationInsightInput,
+  ADDRESS_NOT_FOUND_ERROR,
 } from '@/lib/location-intelligence/api'
 
 export async function POST(request: Request) {
@@ -28,6 +29,10 @@ export async function POST(request: Request) {
     const result = await persistStandaloneLocationInsight(supabase, userId, parsed.data)
     if (result.data) {
       return NextResponse.json({ insight: result.data, persisted: true }, { status: 201 })
+    }
+
+    if (result.error === ADDRESS_NOT_FOUND_ERROR) {
+      return NextResponse.json({ error: result.error }, { status: 404 })
     }
 
     const resolved = await resolveStandaloneLocationInsight(parsed.data)

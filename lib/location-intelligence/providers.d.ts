@@ -79,9 +79,10 @@ export type ResolvedLocationIntelligence = {
   warnings?: string[]
   providers?: {
     geocode: string
-    demographics: string
-    places: string
+    demographics: string | null
+    places: string | null
   }
+  notFound?: boolean
 }
 
 export type DemographicProvider = {
@@ -92,7 +93,7 @@ export type DemographicProvider = {
 export declare const DEFAULT_TIMEOUT_MS: number
 export declare const MockDemographicsProvider: DemographicProvider
 export declare function fetchJsonWithTimeout(url: string, init?: Record<string, unknown>, timeoutMs?: number): Promise<unknown>
-export declare function geocodeLocation(input?: GeocodeInput, options?: Record<string, unknown>): Promise<GeocodeResult>
+export declare function geocodeLocation(input?: GeocodeInput, options?: Record<string, unknown>): Promise<GeocodeResult | null>
 export declare function getDemographicEstimate(location?: Record<string, unknown>, options?: Record<string, unknown>): Promise<DemographicEstimate>
 export declare function getNearbyBusinesses(location?: Record<string, unknown>, options?: Record<string, unknown>): Promise<NearbyBusinessesResult>
 export declare function deriveConsumerProfile(result?: Record<string, unknown>): string
