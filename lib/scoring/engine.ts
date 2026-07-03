@@ -230,16 +230,34 @@ export function scoreCompetition(
 
   const nearby = insight.nearbyBusinesses ?? []
 
-  // Strategies with no conflicts (logistics, services) have low competitive pressure by definition
+  // Strategies with no defined conflict category (logistics, services, any) can't
+  // measure direct competitors — fall back to overall nearby commercial density as
+  // a loose competitive-pressure proxy instead of a flat score for every listing.
   if (profile.nearbyConflicts.length === 0) {
-    signals.push({ category: 'competition', label: 'Perfil com baixa pressão competitiva', impact: 'positive' })
     const weight = profile.weights.competition
+    let score: number
+
+    if (nearby.length === 0) {
+      score = 60
+      signals.push({ category: 'competition', label: 'Sem dados de negócios próximos para avaliar concorrência', impact: 'neutral' })
+    } else if (nearby.length <= 2) {
+      score = 78
+      signals.push({ category: 'competition', label: 'Baixa densidade comercial ao redor', impact: 'positive', value: nearby.length })
+    } else if (nearby.length <= 5) {
+      score = 62
+      signals.push({ category: 'competition', label: 'Densidade comercial moderada ao redor', impact: 'neutral', value: nearby.length })
+    } else {
+      score = 48
+      risks.push({ category: 'competition', label: 'Alta densidade comercial ao redor pode indicar mercado saturado', severity: 'medium' })
+    }
+
+    score = clamp(score)
     return {
       category: 'competition',
       label: 'Concorrência',
-      score: 75,
+      score,
       weight,
-      weighted: Math.round(75 * weight * 100) / 100,
+      weighted: Math.round(score * weight * 100) / 100,
       signals,
       risks,
     }

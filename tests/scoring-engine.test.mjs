@@ -157,6 +157,29 @@ test('scoreCompetition with 6+ competitors returns low score and high risk flag'
 })
 
 // ---------------------------------------------------------------------------
+// Test 6b: scoreCompetition – strategies with no defined conflicts (e.g. 'any')
+// vary with nearby commercial density instead of always returning a flat 75
+// ---------------------------------------------------------------------------
+test('scoreCompetition with no defined conflicts varies by nearby business density', () => {
+  const profile = getStrategy('any')
+  assert.equal(profile.nearbyConflicts.length, 0)
+
+  const empty = scoreCompetition(makeInsight({ nearbyBusinesses: [] }), profile)
+  const low = scoreCompetition(makeInsight({
+    nearbyBusinesses: [{ name: 'A', category: 'shop', distanceMeters: 200, source: 'google' }],
+  }), profile)
+  const high = scoreCompetition(makeInsight({
+    nearbyBusinesses: Array.from({ length: 8 }, (_, i) => ({
+      name: `Loja ${i + 1}`, category: 'shop', distanceMeters: 200, source: 'google',
+    })),
+  }), profile)
+
+  assert.notEqual(empty.score, low.score)
+  assert.notEqual(low.score, high.score)
+  assert.ok(high.risks.length > 0, 'High density should flag a saturation risk')
+})
+
+// ---------------------------------------------------------------------------
 // Test 7: scoreNearbyBusinesses – empty array returns 20 + risk
 // ---------------------------------------------------------------------------
 test('scoreNearbyBusinesses with empty array returns 20 and a risk flag', () => {
