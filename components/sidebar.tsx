@@ -34,6 +34,12 @@ export async function Sidebar() {
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
+        <Link
+          href="/privacidade"
+          className="block px-2 pt-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Privacidade
+        </Link>
       </div>
     </aside>
   )

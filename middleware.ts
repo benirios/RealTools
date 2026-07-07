@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   '/auth/signup(.*)',
   '/om(.*)',
   '/unsubscribe(.*)',
+  '/privacidade(.*)',
   '/api/track(.*)',
   '/api/unsubscribe(.*)',
   '/api/proxy-image(.*)',

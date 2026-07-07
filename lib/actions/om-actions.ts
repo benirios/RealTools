@@ -87,6 +87,7 @@ export async function sendOmAction(
     const omUrl = `${siteUrl}/om/listing/${listingId}?ref=${sendRow.tracking_token}`
     const pixelUrl = `${siteUrl}/api/track/${sendRow.tracking_token}`
     const unsubscribeUrl = `${siteUrl}/api/unsubscribe/${sendRow.tracking_token}`
+    const privacyUrl = `${siteUrl}/privacidade`
     const address = listing.address_text ?? listing.location_text ?? [listing.city, listing.state].filter(Boolean).join(', ') ?? ''
 
     try {
@@ -102,6 +103,7 @@ export async function sendOmAction(
           omUrl,
           pixelUrl,
           unsubscribeUrl,
+          privacyUrl,
         }),
         headers: {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,

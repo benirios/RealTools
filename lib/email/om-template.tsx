@@ -7,6 +7,7 @@ interface OmEmailProps {
   omUrl: string           // /om/listing/[listingId]?ref=[token]
   pixelUrl: string        // /api/track/[token]
   unsubscribeUrl: string  // /api/unsubscribe/[token]
+  privacyUrl: string      // /privacidade
   senderName?: string
 }
 
@@ -23,6 +24,7 @@ export function OmEmailHtml({
   omUrl,
   pixelUrl,
   unsubscribeUrl,
+  privacyUrl,
   senderName,
 }: OmEmailProps): string {
   const from = senderName ? `<strong>${senderName}</strong> via RealTools` : 'RealTools'
@@ -81,6 +83,8 @@ export function OmEmailHtml({
           </p>
           <p style="margin:8px 0 0;color:#a1a1aa;font-size:12px;text-align:center;">
             <a href="${unsubscribeUrl}" style="color:#a1a1aa;">Não quero mais receber estes emails</a>
+            ·
+            <a href="${privacyUrl}" style="color:#a1a1aa;">Aviso de Privacidade</a>
           </p>
         </td></tr>
       </table>
