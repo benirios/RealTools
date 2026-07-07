@@ -59,7 +59,6 @@ export default async function DealHubPage({
     (supabase.from('activities') as any)
       .select('*')
       .eq('deal_id', id)
-      .eq('user_id', userId)
       .order('created_at', { ascending: false }) as Promise<{ data: ActivityRow[] | null; error: unknown }>,
   ])
 
