@@ -98,6 +98,60 @@ export type Database = {
         }
         Relationships: []
       }
+      client_opportunities: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          last_action_at: string | null
+          match_score: number | null
+          notes: string | null
+          opportunity_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          last_action_at?: string | null
+          match_score?: number | null
+          notes?: string | null
+          opportunity_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          last_action_at?: string | null
+          match_score?: number | null
+          notes?: string | null
+          opportunity_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_opportunities_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_buyers: {
         Row: {
           buyer_id: string
@@ -220,165 +274,6 @@ export type Database = {
         }
         Relationships: []
       }
-      investors: {
-        Row: {
-          budget_max: number | null
-          budget_min: number | null
-          created_at: string | null
-          desired_yield: number | null
-          email: string | null
-          id: string
-          name: string
-          notes: string | null
-          phone: string | null
-          preferred_neighborhoods: string[] | null
-          property_types: string[] | null
-          risk_level: string
-          strategy: string
-          tags: string[] | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          budget_max?: number | null
-          budget_min?: number | null
-          created_at?: string | null
-          desired_yield?: number | null
-          email?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          phone?: string | null
-          preferred_neighborhoods?: string[] | null
-          property_types?: string[] | null
-          risk_level?: string
-          strategy?: string
-          tags?: string[] | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          budget_max?: number | null
-          budget_min?: number | null
-          created_at?: string | null
-          desired_yield?: number | null
-          email?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          preferred_neighborhoods?: string[] | null
-          property_types?: string[] | null
-          risk_level?: string
-          strategy?: string
-          tags?: string[] | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      client_opportunities: {
-        Row: {
-          client_id: string
-          created_at: string | null
-          id: string
-          last_action_at: string | null
-          match_score: number | null
-          notes: string | null
-          opportunity_id: string
-          status: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string | null
-          id?: string
-          last_action_at?: string | null
-          match_score?: number | null
-          notes?: string | null
-          opportunity_id: string
-          status?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string | null
-          id?: string
-          last_action_at?: string | null
-          match_score?: number | null
-          notes?: string | null
-          opportunity_id?: string
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_opportunities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_opportunities_opportunity_id_fkey"
-            columns: ["opportunity_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      investor_om_sends: {
-        Row: {
-          id: string
-          user_id: string
-          listing_id: string
-          investor_id: string
-          tracking_token: string
-          om_sent_at: string | null
-          om_opened_at: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          listing_id: string
-          investor_id: string
-          tracking_token?: string
-          om_sent_at?: string | null
-          om_opened_at?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          listing_id?: string
-          investor_id?: string
-          tracking_token?: string
-          om_sent_at?: string | null
-          om_opened_at?: string | null
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "investor_om_sends_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "investor_om_sends_investor_id_fkey"
-            columns: ["investor_id"]
-            isOneToOne: false
-            referencedRelation: "investors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       investor_listing_matches: {
         Row: {
           breakdown: Json
@@ -395,8 +290,8 @@ export type Database = {
           match_status: string
           missing_data: Json
           processed_at: string
-          recommended_action: string
           reasons: Json
+          recommended_action: string
           strengths: Json
           updated_at: string | null
           user_id: string
@@ -416,8 +311,8 @@ export type Database = {
           match_status: string
           missing_data?: Json
           processed_at?: string
-          recommended_action?: string
           reasons?: Json
+          recommended_action?: string
           strengths?: Json
           updated_at?: string | null
           user_id: string
@@ -437,8 +332,8 @@ export type Database = {
           match_status?: string
           missing_data?: Json
           processed_at?: string
-          recommended_action?: string
           reasons?: Json
+          recommended_action?: string
           strengths?: Json
           updated_at?: string | null
           user_id?: string
@@ -460,67 +355,113 @@ export type Database = {
           },
         ]
       }
-      strategy_fit_scores: {
+      investor_om_sends: {
         Row: {
-          best_fit_reasons: Json
-          breakdown: Json
-          confidence: string
           created_at: string | null
-          generated_at: string
           id: string
-          input_data_hash: string
+          investor_id: string
           listing_id: string
-          missing_data: Json
-          score: number
-          strategy: string
-          strengths: Json
-          updated_at: string | null
+          om_opened_at: string | null
+          om_sent_at: string | null
+          tracking_token: string
           user_id: string
-          weaknesses: Json
         }
         Insert: {
-          best_fit_reasons?: Json
-          breakdown?: Json
-          confidence: string
           created_at?: string | null
-          generated_at?: string
           id?: string
-          input_data_hash: string
+          investor_id: string
           listing_id: string
-          missing_data?: Json
-          score: number
-          strategy: string
-          strengths?: Json
-          updated_at?: string | null
+          om_opened_at?: string | null
+          om_sent_at?: string | null
+          tracking_token?: string
           user_id: string
-          weaknesses?: Json
         }
         Update: {
-          best_fit_reasons?: Json
-          breakdown?: Json
-          confidence?: string
           created_at?: string | null
-          generated_at?: string
           id?: string
-          input_data_hash?: string
+          investor_id?: string
           listing_id?: string
-          missing_data?: Json
-          score?: number
-          strategy?: string
-          strengths?: Json
-          updated_at?: string | null
+          om_opened_at?: string | null
+          om_sent_at?: string | null
+          tracking_token?: string
           user_id?: string
-          weaknesses?: Json
         }
         Relationships: [
           {
-            foreignKeyName: "strategy_fit_scores_listing_id_fkey"
+            foreignKeyName: "investor_om_sends_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_om_sends_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
         ]
+      }
+      investors: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string | null
+          desired_yield: number | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          om_unsubscribed_at: string | null
+          phone: string | null
+          preferred_neighborhoods: string[] | null
+          property_types: string[] | null
+          risk_level: string
+          strategy: string
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          desired_yield?: number | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          om_unsubscribed_at?: string | null
+          phone?: string | null
+          preferred_neighborhoods?: string[] | null
+          property_types?: string[] | null
+          risk_level?: string
+          strategy?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          desired_yield?: number | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          om_unsubscribed_at?: string | null
+          phone?: string | null
+          preferred_neighborhoods?: string[] | null
+          property_types?: string[] | null
+          risk_level?: string
+          strategy?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       listing_ai_summaries: {
         Row: {
@@ -574,6 +515,227 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      listing_import_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_count: number
+          error_message: string | null
+          failed_count: number
+          id: string
+          metadata: Json | null
+          skipped_count: number
+          source: string
+          started_at: string | null
+          status: string
+          target_id: string | null
+          updated_count: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_count?: number
+          error_message?: string | null
+          failed_count?: number
+          id?: string
+          metadata?: Json | null
+          skipped_count?: number
+          source: string
+          started_at?: string | null
+          status?: string
+          target_id?: string | null
+          updated_count?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_count?: number
+          error_message?: string | null
+          failed_count?: number
+          id?: string
+          metadata?: Json | null
+          skipped_count?: number
+          source?: string
+          started_at?: string | null
+          status?: string
+          target_id?: string | null
+          updated_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_import_runs_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "listing_import_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_import_targets: {
+        Row: {
+          city: string
+          country: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          search_term: string
+          source: string
+          state: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          city: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          search_term: string
+          source: string
+          state: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          search_term?: string
+          source?: string
+          state?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      listings: {
+        Row: {
+          address_text: string | null
+          city: string | null
+          commercial_type: string | null
+          confidence: number | null
+          country: string
+          created_at: string | null
+          description: string | null
+          description_organized: Json | null
+          description_organized_error: string | null
+          description_organized_hash: string | null
+          description_organized_status: string
+          enrichment_error: string | null
+          enrichment_last_processed_at: string | null
+          enrichment_status: string
+          first_seen_at: string | null
+          id: string
+          images: string[] | null
+          is_commercial: boolean | null
+          last_seen_at: string | null
+          lat: number | null
+          lng: number | null
+          location_text: string | null
+          matching_error: string | null
+          matching_last_processed_at: string | null
+          matching_status: string
+          neighborhood: string | null
+          price_amount: number | null
+          price_text: string | null
+          property_type: string | null
+          raw_payload: Json | null
+          reasoning: string | null
+          source: string
+          source_url: string
+          state: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address_text?: string | null
+          city?: string | null
+          commercial_type?: string | null
+          confidence?: number | null
+          country?: string
+          created_at?: string | null
+          description?: string | null
+          description_organized?: Json | null
+          description_organized_error?: string | null
+          description_organized_hash?: string | null
+          description_organized_status?: string
+          enrichment_error?: string | null
+          enrichment_last_processed_at?: string | null
+          enrichment_status?: string
+          first_seen_at?: string | null
+          id?: string
+          images?: string[] | null
+          is_commercial?: boolean | null
+          last_seen_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_text?: string | null
+          matching_error?: string | null
+          matching_last_processed_at?: string | null
+          matching_status?: string
+          neighborhood?: string | null
+          price_amount?: number | null
+          price_text?: string | null
+          property_type?: string | null
+          raw_payload?: Json | null
+          reasoning?: string | null
+          source: string
+          source_url: string
+          state?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address_text?: string | null
+          city?: string | null
+          commercial_type?: string | null
+          confidence?: number | null
+          country?: string
+          created_at?: string | null
+          description?: string | null
+          description_organized?: Json | null
+          description_organized_error?: string | null
+          description_organized_hash?: string | null
+          description_organized_status?: string
+          enrichment_error?: string | null
+          enrichment_last_processed_at?: string | null
+          enrichment_status?: string
+          first_seen_at?: string | null
+          id?: string
+          images?: string[] | null
+          is_commercial?: boolean | null
+          last_seen_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_text?: string | null
+          matching_error?: string | null
+          matching_last_processed_at?: string | null
+          matching_status?: string
+          neighborhood?: string | null
+          price_amount?: number | null
+          price_text?: string | null
+          property_type?: string | null
+          raw_payload?: Json | null
+          reasoning?: string | null
+          source?: string
+          source_url?: string
+          state?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       location_insights: {
         Row: {
@@ -655,227 +817,6 @@ export type Database = {
           },
         ]
       }
-      listing_import_targets: {
-        Row: {
-          city: string
-          country: string
-          created_at: string | null
-          id: string
-          is_active: boolean
-          search_term: string
-          source: string
-          state: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          city: string
-          country?: string
-          created_at?: string | null
-          id?: string
-          is_active?: boolean
-          search_term: string
-          source: string
-          state: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          city?: string
-          country?: string
-          created_at?: string | null
-          id?: string
-          is_active?: boolean
-          search_term?: string
-          source?: string
-          state?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      listing_import_runs: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          created_count: number
-          error_message: string | null
-          failed_count: number
-          id: string
-          metadata: Json | null
-          skipped_count: number
-          source: string
-          started_at: string | null
-          status: string
-          target_id: string | null
-          updated_count: number
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          created_count?: number
-          error_message?: string | null
-          failed_count?: number
-          id?: string
-          metadata?: Json | null
-          skipped_count?: number
-          source: string
-          started_at?: string | null
-          status?: string
-          target_id?: string | null
-          updated_count?: number
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          created_count?: number
-          error_message?: string | null
-          failed_count?: number
-          id?: string
-          metadata?: Json | null
-          skipped_count?: number
-          source?: string
-          started_at?: string | null
-          status?: string
-          target_id?: string | null
-          updated_count?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listing_import_runs_target_id_fkey"
-            columns: ["target_id"]
-            isOneToOne: false
-            referencedRelation: "listing_import_targets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      listings: {
-        Row: {
-          address_text: string | null
-          city: string | null
-          commercial_type: string | null
-          confidence: number | null
-          country: string
-          created_at: string | null
-          description: string | null
-          description_organized: Json | null
-          description_organized_error: string | null
-          description_organized_hash: string | null
-          description_organized_status: string
-          enrichment_error: string | null
-          enrichment_last_processed_at: string | null
-          enrichment_status: string
-          first_seen_at: string | null
-          id: string
-          images: string[] | null
-          is_commercial: boolean | null
-          last_seen_at: string | null
-          lat: number | null
-          lng: number | null
-          location_text: string | null
-          matching_error: string | null
-          matching_last_processed_at: string | null
-          matching_status: string
-          neighborhood: string | null
-          price_amount: number | null
-          price_text: string | null
-          raw_payload: Json | null
-          reasoning: string | null
-          source: string
-          source_url: string
-          state: string | null
-          tags: string[] | null
-          title: string
-          property_type: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          address_text?: string | null
-          city?: string | null
-          commercial_type?: string | null
-          confidence?: number | null
-          country?: string
-          created_at?: string | null
-          description?: string | null
-          description_organized?: Json | null
-          description_organized_error?: string | null
-          description_organized_hash?: string | null
-          description_organized_status?: string
-          enrichment_error?: string | null
-          enrichment_last_processed_at?: string | null
-          enrichment_status?: string
-          first_seen_at?: string | null
-          id?: string
-          images?: string[] | null
-          is_commercial?: boolean | null
-          last_seen_at?: string | null
-          lat?: number | null
-          lng?: number | null
-          location_text?: string | null
-          matching_error?: string | null
-          matching_last_processed_at?: string | null
-          matching_status?: string
-          neighborhood?: string | null
-          price_amount?: number | null
-          price_text?: string | null
-          raw_payload?: Json | null
-          reasoning?: string | null
-          source: string
-          source_url: string
-          state?: string | null
-          tags?: string[] | null
-          title: string
-          property_type?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          address_text?: string | null
-          city?: string | null
-          commercial_type?: string | null
-          confidence?: number | null
-          country?: string
-          created_at?: string | null
-          description?: string | null
-          description_organized?: Json | null
-          description_organized_error?: string | null
-          description_organized_hash?: string | null
-          description_organized_status?: string
-          enrichment_error?: string | null
-          enrichment_last_processed_at?: string | null
-          enrichment_status?: string
-          first_seen_at?: string | null
-          id?: string
-          images?: string[] | null
-          is_commercial?: boolean | null
-          last_seen_at?: string | null
-          lat?: number | null
-          lng?: number | null
-          location_text?: string | null
-          matching_error?: string | null
-          matching_last_processed_at?: string | null
-          matching_status?: string
-          neighborhood?: string | null
-          price_amount?: number | null
-          price_text?: string | null
-          raw_payload?: Json | null
-          reasoning?: string | null
-          source?: string
-          source_url?: string
-          state?: string | null
-          tags?: string[] | null
-          title?: string
-          property_type?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       notes: {
         Row: {
           content: string
@@ -925,8 +866,8 @@ export type Database = {
           investor_fit_score: number | null
           listing_id: string
           location_score: number | null
-          risks: Json
           risk_score: number | null
+          risks: Json
           score_version: number
           signals: Json
           strategy_slug: string
@@ -947,8 +888,8 @@ export type Database = {
           investor_fit_score?: number | null
           listing_id: string
           location_score?: number | null
-          risks?: Json
           risk_score?: number | null
+          risks?: Json
           score_version?: number
           signals?: Json
           strategy_slug: string
@@ -969,8 +910,8 @@ export type Database = {
           investor_fit_score?: number | null
           listing_id?: string
           location_score?: number | null
-          risks?: Json
           risk_score?: number | null
+          risks?: Json
           score_version?: number
           signals?: Json
           strategy_slug?: string
@@ -986,11 +927,66 @@ export type Database = {
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      strategy_fit_scores: {
+        Row: {
+          best_fit_reasons: Json
+          breakdown: Json
+          confidence: string
+          created_at: string | null
+          generated_at: string
+          id: string
+          input_data_hash: string
+          listing_id: string
+          missing_data: Json
+          score: number
+          strategy: string
+          strengths: Json
+          updated_at: string | null
+          user_id: string
+          weaknesses: Json
+        }
+        Insert: {
+          best_fit_reasons?: Json
+          breakdown?: Json
+          confidence: string
+          created_at?: string | null
+          generated_at?: string
+          id?: string
+          input_data_hash: string
+          listing_id: string
+          missing_data?: Json
+          score: number
+          strategy: string
+          strengths?: Json
+          updated_at?: string | null
+          user_id: string
+          weaknesses?: Json
+        }
+        Update: {
+          best_fit_reasons?: Json
+          breakdown?: Json
+          confidence?: string
+          created_at?: string | null
+          generated_at?: string
+          id?: string
+          input_data_hash?: string
+          listing_id?: string
+          missing_data?: Json
+          score?: number
+          strategy?: string
+          strengths?: Json
+          updated_at?: string | null
+          user_id?: string
+          weaknesses?: Json
+        }
+        Relationships: [
           {
-            foreignKeyName: "opportunity_scores_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "strategy_fit_scores_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "listings"
             referencedColumns: ["id"]
           },
         ]
@@ -1127,3 +1123,12 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const

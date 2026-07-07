@@ -42,12 +42,15 @@ export async function sendOmAction(
 
   if (!listing) return { status: 'error', message: 'Imóvel não encontrado.' }
 
-  // Load investors — scoped to userId to prevent cross-tenant sends
+  // Load investors — scoped to userId to prevent cross-tenant sends.
+  // Unsubscribed investors are excluded outright, not just skipped, so a
+  // re-send attempt never re-triggers an email to them.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: investors } = await (supabase.from('investors') as any)
     .select('id, name, email')
     .in('id', investorIds)
-    .eq('user_id', userId) as { data: InvestorRow[] | null }
+    .eq('user_id', userId)
+    .is('om_unsubscribed_at', null) as { data: InvestorRow[] | null }
 
   if (!investors?.length) return { status: 'error', message: 'Nenhum investidor válido encontrado.' }
 
@@ -63,17 +66,18 @@ export async function sendOmAction(
   for (const investor of investors) {
     if (!investor.email) continue
 
-    // Create send row — new row per send so re-sends get a fresh tracking token
+    // Create send row — new row per send so re-sends get a fresh tracking token.
+    // om_sent_at is set only after the Resend call succeeds (below), so a failed
+    // send is never recorded as sent.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: sendRow } = await (supabase.from('investor_om_sends') as any)
       .insert({
         user_id: userId,
         listing_id: listingId,
         investor_id: investor.id,
-        om_sent_at: new Date().toISOString(),
       })
-      .select('tracking_token')
-      .single() as { data: Pick<InvestorOmSendRow, 'tracking_token'> | null }
+      .select('id, tracking_token')
+      .single() as { data: (Pick<InvestorOmSendRow, 'tracking_token'> & { id: string }) | null }
 
     if (!sendRow) {
       errors.push(`${investor.name}: falha ao criar registro de envio`)
@@ -82,6 +86,7 @@ export async function sendOmAction(
 
     const omUrl = `${siteUrl}/om/listing/${listingId}?ref=${sendRow.tracking_token}`
     const pixelUrl = `${siteUrl}/api/track/${sendRow.tracking_token}`
+    const unsubscribeUrl = `${siteUrl}/api/unsubscribe/${sendRow.tracking_token}`
     const address = listing.address_text ?? listing.location_text ?? [listing.city, listing.state].filter(Boolean).join(', ') ?? ''
 
     try {
@@ -96,11 +101,17 @@ export async function sendOmAction(
           listingPriceText: listing.price_text ?? null,
           omUrl,
           pixelUrl,
+          unsubscribeUrl,
         }),
         headers: {
-          'List-Unsubscribe': `<${siteUrl}/unsubscribe?email=${encodeURIComponent(investor.email)}>`,
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('investor_om_sends') as any)
+        .update({ om_sent_at: new Date().toISOString() })
+        .eq('id', sendRow.id)
       sent++
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'erro desconhecido'

@@ -4,8 +4,9 @@ interface OmEmailProps {
   listingTitle: string
   listingAddress: string
   listingPriceText: string | null
-  omUrl: string       // /om/listing/[listingId]?ref=[token]
-  pixelUrl: string    // /api/track/[token]
+  omUrl: string           // /om/listing/[listingId]?ref=[token]
+  pixelUrl: string        // /api/track/[token]
+  unsubscribeUrl: string  // /api/unsubscribe/[token]
   senderName?: string
 }
 
@@ -21,6 +22,7 @@ export function OmEmailHtml({
   listingPriceText,
   omUrl,
   pixelUrl,
+  unsubscribeUrl,
   senderName,
 }: OmEmailProps): string {
   const from = senderName ? `<strong>${senderName}</strong> via RealTools` : 'RealTools'
@@ -76,6 +78,9 @@ export function OmEmailHtml({
         <tr><td style="background:#f4f4f5;padding:20px 32px;border-top:1px solid #e4e4e7;">
           <p style="margin:0;color:#a1a1aa;font-size:12px;text-align:center;">
             Desenvolvido com RealTools · Este email foi enviado a convite de um corretor parceiro.
+          </p>
+          <p style="margin:8px 0 0;color:#a1a1aa;font-size:12px;text-align:center;">
+            <a href="${unsubscribeUrl}" style="color:#a1a1aa;">Não quero mais receber estes emails</a>
           </p>
         </td></tr>
       </table>
