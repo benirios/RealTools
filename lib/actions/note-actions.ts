@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
+import { dealBelongsToUser } from '@/lib/actions/deal-ownership'
 import type { Database } from '@/types/supabase'
 
 type NoteInsert = Database['public']['Tables']['notes']['Insert']
@@ -43,13 +44,18 @@ export async function createNoteAction(
     return { errors: parsed.error.flatten().fieldErrors }
   }
 
+  const supabase = createSupabaseServiceClient()
+
+  if (!(await dealBelongsToUser(supabase, parsed.data.deal_id, userId))) {
+    return { errors: { general: ['Negócio não encontrado.'] } }
+  }
+
   const insertData: NoteInsert = {
     content: parsed.data.content,
     deal_id: parsed.data.deal_id,
     user_id: userId,
   }
 
-  const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('notes') as any).insert(insertData)
 
