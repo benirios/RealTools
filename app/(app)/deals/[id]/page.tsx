@@ -145,7 +145,7 @@ export default async function DealHubPage({
 
           <NotesSection notes={notes} dealId={deal.id} />
 
-          <FilesSection files={filesWithUrls} dealId={deal.id} userId={userId} />
+          <FilesSection files={filesWithUrls} dealId={deal.id} />
         </div>
 
         <div className="space-y-6">

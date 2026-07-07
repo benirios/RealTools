@@ -14,8 +14,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { insertDealFileAction, deleteDealFileAction } from '@/lib/actions/file-actions'
+import { uploadDealFileAction, deleteDealFileAction } from '@/lib/actions/file-actions'
 import { toast } from 'sonner'
 
 type DealFile = {
@@ -29,11 +28,9 @@ type DealFile = {
 export function FilesSection({
   files,
   dealId,
-  userId,
 }: {
   files: DealFile[]
   dealId: string
-  userId: string
 }) {
   const [uploading, setUploading] = useState(false)
 
@@ -41,56 +38,19 @@ export function FilesSection({
     const file = e.target.files?.[0]
     if (!file) return
 
-    const ALLOWED_MIME = new Set([
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    ])
-    if (!ALLOWED_MIME.has(file.type)) {
-      toast.error('Tipo de arquivo não permitido. Use PDF, Word, Excel, PowerPoint ou imagem.')
-      e.target.value = ''
-      return
-    }
-
-    // 50MB limit
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo de 50MB.')
-      e.target.value = ''
-      return
-    }
-
     setUploading(true)
-    const supabase = createSupabaseBrowserClient()
-    // Path: {user_id}/{deal_id}/{timestamp}-{filename} — required by Storage RLS policy
-    const path = `${userId}/${dealId}/${Date.now()}-${file.name}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('deal-files')
-      .upload(path, file, { upsert: false })
+    const formData = new FormData()
+    formData.set('deal_id', dealId)
+    formData.set('file', file)
 
-    if (uploadError) {
-      toast.error('Falha ao enviar arquivo.')
-      setUploading(false)
-      e.target.value = ''
-      return
-    }
-
-    const result = await insertDealFileAction({
-      dealId,
-      storagePath: path,
-      fileName: file.name,
-    })
+    const result = await uploadDealFileAction(formData)
 
     setUploading(false)
     e.target.value = ''
 
     if (result.error) {
-      toast.error('Arquivo enviado, mas o registro falhou. Atualize a página.')
+      toast.error(result.error)
     } else {
       toast.success('Arquivo enviado.')
     }
@@ -147,9 +107,8 @@ function FileRow({ file }: { file: DealFile }) {
   async function handleDelete() {
     setDeletePending(true)
     const result = await deleteDealFileAction({
-      fileId:      file.id,
-      storagePath: file.storage_path,
-      dealId:      file.deal_id,
+      fileId: file.id,
+      dealId: file.deal_id,
     })
     setDeletePending(false)
     if (result.error) {
