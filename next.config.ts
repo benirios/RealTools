@@ -33,10 +33,10 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: repoRoot,
-  // @sparticuz/chromium resolves its binary via relative paths at runtime — bundling
-  // it (the webpack/turbopack default) breaks that resolution. Keeping it external
-  // means Next's build tracer copies the package's files as-is instead of rewriting them.
-  serverExternalPackages: ['@sparticuz/chromium', 'playwright-core'],
+  // @sparticuz/chromium-min resolves its (remotely-downloaded) binary via relative
+  // /tmp paths at runtime — bundling it (the webpack/turbopack default) breaks that
+  // resolution. Keeping it external means Next copies the package's JS as-is.
+  serverExternalPackages: ['@sparticuz/chromium-min', 'playwright-core'],
   images: {
     remotePatterns: [
       {

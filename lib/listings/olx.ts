@@ -4,15 +4,30 @@ import { enrichListingFields } from '@/lib/listings/enrichment'
 
 // playwright-core ships no browser binary. Locally, the `playwright` devDependency's
 // postinstall step downloads Chromium into the shared ms-playwright cache, which
-// playwright-core resolves automatically. On Vercel, that cache doesn't exist in the
-// deployed function (and a full Chromium download exceeds the function size limit
-// anyway), so @sparticuz/chromium supplies a serverless-sized build instead.
+// playwright-core resolves automatically.
+//
+// On Vercel that cache doesn't exist, and bundling a full Chromium build (~300MB)
+// blows past the function size limit anyway. @sparticuz/chromium-min (no bundled
+// binary — the "-min" split exists specifically to sidestep this) downloads a
+// serverless-sized Chromium pack from this GitHub release at cold start, caching it
+// in /tmp for warm invocations. The full (non-min) @sparticuz/chromium package
+// bundles its binary instead, but relies on Next's output-file tracer to carry it
+// into the deployed function bundle — confirmed broken on Vercel even with
+// outputFileTracingIncludes correctly listing the files in the Next.js trace
+// manifest; Vercel's own builder still drops them. This sidesteps that entirely.
+//
+// Pack architecture is pinned to x64 (Vercel's default runtime architecture — this
+// project has no ARM function config). Bump the version in the URL when bumping
+// the @sparticuz/chromium-min dependency version; they must match.
+const CHROMIUM_PACK_URL =
+  'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar'
+
 async function launchScraperBrowser(): Promise<Browser> {
   if (process.env.VERCEL) {
-    const sparticuzChromium = (await import('@sparticuz/chromium')).default
+    const sparticuzChromium = (await import('@sparticuz/chromium-min')).default
     return chromium.launch({
       args: sparticuzChromium.args,
-      executablePath: await sparticuzChromium.executablePath(),
+      executablePath: await sparticuzChromium.executablePath(CHROMIUM_PACK_URL),
       headless: true,
     })
   }
