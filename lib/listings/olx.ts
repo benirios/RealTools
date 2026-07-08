@@ -159,10 +159,20 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
 
     const page = await context.newPage()
 
-    await page.goto(buildOlxSearchUrl(target), {
+    const searchUrl = buildOlxSearchUrl(target)
+    const response = await page.goto(searchUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 25000,
     })
+
+    // Diagnostic only — no scraped data depends on this, just visibility into
+    // whether the search page itself loaded, or got Cloudflare-challenged/blocked
+    // (this only ever showed up as a silent zero-results run in production logs).
+    const searchPageBodyText = await page.evaluate(() => document.body.textContent ?? '')
+    console.log(
+      `[olx] search page: status=${response?.status()} title="${await page.title()}" ` +
+        `cloudflareBlocked=${isCloudflareBlock(searchPageBodyText)} bodyLen=${searchPageBodyText.length}`
+    )
 
     // Wheel-scroll triggers Intersection Observer lazy loading; window.scrollTo() does not
     for (let i = 0; i < 15; i++) {
@@ -238,6 +248,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
         .slice(0, limit)
     }, rawCardLimit)
 
+    console.log(`[olx] rawCards=${rawCards.length}`)
+
     const drafts: ListingDraft[] = []
 
     const isCommercialSearch = /comercial|ponto|loja|sala|galpao|varejo|comercio/i.test(target.searchTerm)
@@ -259,6 +271,8 @@ export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft
 
       return true
     })
+
+    console.log(`[olx] candidates=${candidates.length} (after URL/title/residential filtering)`)
 
     for (const raw of candidates.slice(0, maxListings)) {
       const sourceUrl = toAbsoluteUrl(raw.href)
