@@ -1,6 +1,23 @@
-import { chromium } from 'playwright'
+import { chromium, type Browser } from 'playwright-core'
 import type { ListingDraft } from '@/lib/schemas/listing'
 import { enrichListingFields } from '@/lib/listings/enrichment'
+
+// playwright-core ships no browser binary. Locally, the `playwright` devDependency's
+// postinstall step downloads Chromium into the shared ms-playwright cache, which
+// playwright-core resolves automatically. On Vercel, that cache doesn't exist in the
+// deployed function (and a full Chromium download exceeds the function size limit
+// anyway), so @sparticuz/chromium supplies a serverless-sized build instead.
+async function launchScraperBrowser(): Promise<Browser> {
+  if (process.env.VERCEL) {
+    const sparticuzChromium = (await import('@sparticuz/chromium')).default
+    return chromium.launch({
+      args: sparticuzChromium.args,
+      executablePath: await sparticuzChromium.executablePath(),
+      headless: true,
+    })
+  }
+  return chromium.launch({ headless: true })
+}
 
 export type OlxTarget = {
   state?: string
@@ -107,7 +124,7 @@ export function buildOlxSearchUrl(target: OlxTarget) {
 
 export async function scrapeOlxListings(target: OlxTarget): Promise<ListingDraft[]> {
   const maxListings = normalizeLimit(target.maxListings)
-  const browser = await chromium.launch({ headless: true })
+  const browser = await launchScraperBrowser()
 
   try {
     const context = await browser.newContext({
