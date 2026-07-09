@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation'
 import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
 import { PageContent } from '@/components/page-content'
-import { getAiSummaryJson } from '@/lib/ai/deal-summary-service'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
-import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
 import type { Database, Json } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
@@ -12,7 +10,6 @@ type ScoreRow = Database['public']['Tables']['opportunity_scores']['Row']
 type LocationInsightRow = Database['public']['Tables']['location_insights']['Row']
 type MatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
 type InvestorRow = Database['public']['Tables']['investors']['Row']
-type AiSummaryRow = Database['public']['Tables']['listing_ai_summaries']['Row']
 
 type LoadError = { message?: string } | null
 
@@ -125,12 +122,11 @@ function buildAddress(listing: ListingRow) {
   return listing.address_text || location || listing.location_text || null
 }
 
-function buildLastProcessed(listing: ListingRow, score: ScoreRow | null, summaryRow: AiSummaryRow | null) {
+function buildLastProcessed(listing: ListingRow, score: ScoreRow | null) {
   return [
     listing.enrichment_last_processed_at,
     listing.matching_last_processed_at,
     score?.computed_at,
-    summaryRow?.generated_at,
   ].filter(Boolean).sort().at(-1) ?? null
 }
 
@@ -162,11 +158,10 @@ export default async function DecisionSurfacePage() {
   let scores: ScoreRow[] = []
   let insights: LocationInsightRow[] = []
   let matches: MatchRow[] = []
-  let summaries: AiSummaryRow[] = []
   let investors: InvestorRow[] = []
 
   if (listingIds.length > 0) {
-    const [scoreResult, insightResult, matchResult, summaryResult] = await Promise.all([
+    const [scoreResult, insightResult, matchResult] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase.from('opportunity_scores') as any)
         .select('*')
@@ -185,18 +180,11 @@ export default async function DecisionSurfacePage() {
         .eq('user_id', userId)
         .in('listing_id', listingIds)
         .order('match_score', { ascending: false }) as Promise<{ data: MatchRow[] | null }>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase.from('listing_ai_summaries') as any)
-        .select('*')
-        .eq('user_id', userId)
-        .in('listing_id', listingIds)
-        .order('updated_at', { ascending: false }) as Promise<{ data: AiSummaryRow[] | null }>,
     ])
 
     scores = scoreResult.data ?? []
     insights = insightResult.data ?? []
     matches = matchResult.data ?? []
-    summaries = summaryResult.data ?? []
 
     const investorIds = Array.from(new Set(matches.map((match) => match.investor_id)))
     if (investorIds.length > 0) {
@@ -211,15 +199,12 @@ export default async function DecisionSurfacePage() {
 
   const scoreMap = scoreByListing(scores)
   const insightMap = latestByListing(insights, 'updated_at')
-  const summaryMap = latestByListing(summaries, 'updated_at')
   const matchMap = matchesByListing(matches)
   const investorMap = new Map(investors.map((investor) => [investor.id, investor]))
 
   const opportunities: DecisionOpportunity[] = listings.map((listing) => {
     const score = scoreMap.get(listing.id) ?? null
     const insight = insightMap.get(listing.id) ?? null
-    const summaryRow = summaryMap.get(listing.id) ?? null
-    const aiSummary = getAiSummaryJson(summaryRow) as AiDealSummary | null
     const listingMatches = (matchMap.get(listing.id) ?? []).slice(0, 8)
     const coordinates = normalizeBrazilCoordinates(
       listing.lat ?? insight?.latitude,
@@ -246,7 +231,7 @@ export default async function DecisionSurfacePage() {
       enrichmentLastProcessedAt: listing.enrichment_last_processed_at,
       matchingLastProcessedAt: listing.matching_last_processed_at,
       firstSeenAt: listing.first_seen_at,
-      lastProcessedAt: buildLastProcessed(listing, score, summaryRow),
+      lastProcessedAt: buildLastProcessed(listing, score),
       score: score ? {
         total: score.total_score,
         fitLabel: score.fit_label,
@@ -261,9 +246,6 @@ export default async function DecisionSurfacePage() {
         signals: score.signals,
         computedAt: score.computed_at,
       } : null,
-      aiSummary,
-      aiSummaryStatus: summaryRow?.status ?? 'pending',
-      aiSummaryGeneratedAt: summaryRow?.generated_at ?? null,
       investorMatches: listingMatches.map((match) => {
         const investor = investorMap.get(match.investor_id)
 

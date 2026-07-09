@@ -1,9 +1,6 @@
-import type { OrganizedDescription } from '@/lib/ai/description-organizer-schema'
-
 type ListingDescriptionProps = {
   title: string
   description: string
-  organized?: OrganizedDescription | null
 }
 
 type SegmentedDescription = {
@@ -177,31 +174,7 @@ function SectionList({ items }: { items: string[] }) {
   )
 }
 
-export function ListingDescription({ title, description, organized }: ListingDescriptionProps) {
-  if (organized && organized.paragraphs.length > 0) {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Descrição</p>
-          <div className="space-y-3">
-            {organized.paragraphs.map((paragraph) => (
-              <p key={paragraph} className="text-sm leading-relaxed text-foreground">
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        </div>
-
-        {organized.highlights.length > 0 && (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Destaques</p>
-            <SectionList items={organized.highlights} />
-          </div>
-        )}
-      </div>
-    )
-  }
-
+export function ListingDescription({ title, description }: ListingDescriptionProps) {
   const segmented = segmentDescription(description, title)
 
   if (!segmented) return null

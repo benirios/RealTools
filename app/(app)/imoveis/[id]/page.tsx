@@ -3,10 +3,9 @@ import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { PageContent } from '@/components/page-content'
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AiDealSummaryCard } from '@/components/listings/ai-deal-summary-card'
 import { ListingImages } from '@/components/listings/listing-images'
 import { ListingDescription } from '@/components/listings/listing-description'
 import { ListingInvestorMatches } from '@/components/listings/listing-investor-matches'
@@ -16,10 +15,6 @@ import { OpportunityScoreCard } from '@/components/listings/opportunity-score-ca
 import { ClientOpportunityNotesForm, ClientOpportunityPipelineActions } from '@/components/investors/client-workspace-actions'
 import { getListingLocationInsightByListingId } from '@/lib/location-intelligence/api'
 import { loadPersistedMatchesForListing, type PersistedListingMatch } from '@/lib/investors/match-processing'
-import { getAiSummaryJson, loadAiDealSummary } from '@/lib/ai/deal-summary-service'
-import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
-import { getOrganizedDescriptionJson } from '@/lib/ai/description-organizer-service'
-import type { OrganizedDescription } from '@/lib/ai/description-organizer-schema'
 import { getScoreHistory } from '@/lib/scoring/data'
 import { scoreRowToCardEntry } from '@/lib/scoring/score-card-ui'
 import { OmRecipientsCard } from '@/components/listings/om-recipients-card'
@@ -93,28 +88,23 @@ function confidenceLabel(value: string | null | undefined) {
   return 'Confiança em cálculo'
 }
 
-function compactSummary(summary: AiDealSummary | null, match: PersistedListingMatch | undefined) {
-  return summary?.headline
-    ?? summary?.investor_angle
-    ?? match?.explanation
-    ?? 'Resumo ainda não gerado. A oportunidade já pode ser avaliada pelos sinais de match disponíveis.'
+function compactSummary(match: PersistedListingMatch | undefined) {
+  return match?.explanation
+    ?? 'Sinais de aderência ainda em cálculo.'
 }
 
-function fitReasons(summary: AiDealSummary | null, match: PersistedListingMatch | undefined, scores: ScoreEntry[]) {
+function fitReasons(match: PersistedListingMatch | undefined, scores: ScoreEntry[]) {
   const scoreSignals = scores.flatMap((entry) => entry.result.signals.map((signal) => signal.label))
   return uniqueItems([
-    ...(summary?.best_fit ?? []),
-    ...(summary?.strengths ?? []),
     ...(match?.strengths ?? []),
     ...(match?.reasons ?? []),
     ...scoreSignals,
   ]).slice(0, 4)
 }
 
-function riskReasons(summary: AiDealSummary | null, match: PersistedListingMatch | undefined, scores: ScoreEntry[]) {
+function riskReasons(match: PersistedListingMatch | undefined, scores: ScoreEntry[]) {
   const scoreRisks = scores.flatMap((entry) => entry.result.risks.map((risk) => risk.label))
   return uniqueItems([
-    ...(summary?.risks ?? []),
     ...(match?.concerns ?? []),
     ...scoreRisks,
   ]).slice(0, 4)
@@ -128,12 +118,9 @@ function ClientOpportunityRecommendationView({
   location,
   images,
   description,
-  organizedDescription,
   reasoning,
   locationInsight,
   scoreEntries,
-  aiSummaryRow,
-  aiSummary,
   omSends,
 }: {
   listing: ListingRow
@@ -143,20 +130,17 @@ function ClientOpportunityRecommendationView({
   location: string
   images: string[]
   description: string | null
-  organizedDescription: OrganizedDescription | null
   reasoning: string | null
   locationInsight: Awaited<ReturnType<typeof getListingLocationInsightByListingId>>
   scoreEntries: ScoreEntry[]
-  aiSummaryRow: Awaited<ReturnType<typeof loadAiDealSummary>>
-  aiSummary: AiDealSummary | null
   omSends: Awaited<ReturnType<typeof getOmSendsForListingAction>>
 }) {
   const status = normalizeClientStatus(clientOpportunity?.status)
   const fitScore = clientOpportunity?.match_score ?? clientMatch?.match_score ?? scoreEntries[0]?.result.totalScore ?? null
-  const confidence = clientMatch?.confidence ?? aiSummary?.confidence ?? null
-  const reasons = fitReasons(aiSummary, clientMatch, scoreEntries)
-  const risks = riskReasons(aiSummary, clientMatch, scoreEntries)
-  const recommendedAction = clientMatch?.recommended_action || aiSummary?.recommended_action || 'Decida o próximo estágio deste cliente no pipeline.'
+  const confidence = clientMatch?.confidence ?? null
+  const reasons = fitReasons(clientMatch, scoreEntries)
+  const risks = riskReasons(clientMatch, scoreEntries)
+  const recommendedAction = clientMatch?.recommended_action || 'Decida o próximo estágio deste cliente no pipeline.'
 
   return (
     <PageContent>
@@ -246,16 +230,6 @@ function ClientOpportunityRecommendationView({
       </section>
 
       <section className="rounded-md border border-border bg-card p-5">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">Resumo IA</h2>
-        </div>
-        <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-muted-foreground">
-          {compactSummary(aiSummary, clientMatch)}
-        </p>
-      </section>
-
-      <section className="rounded-md border border-border bg-card p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Próxima ação</p>
@@ -292,7 +266,7 @@ function ClientOpportunityRecommendationView({
           <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="space-y-5 border-t border-border p-5">
-          {description && <ListingDescription title={listing.title} description={description} organized={organizedDescription} />}
+          {description && <ListingDescription title={listing.title} description={description} />}
           {reasoning && (
             <div className="rounded-md border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Análise de classificação</p>
@@ -321,11 +295,6 @@ function ClientOpportunityRecommendationView({
             initialScores={scoreEntries}
           />
 
-          <AiDealSummaryCard
-            listingId={listing.id}
-            summaryRow={aiSummaryRow}
-            summary={aiSummary}
-          />
         </div>
       </details>
     </div>
@@ -361,8 +330,6 @@ export default async function ImovelDetailPage({
   const scoreEntries = scoreRows.map(scoreRowToCardEntry)
   const investorMatches = await loadPersistedMatchesForListing(supabase, userId, id)
   const omSends = await getOmSendsForListingAction(id)
-  const aiSummaryRow = await loadAiDealSummary(supabase, userId, id)
-  const aiSummary = getAiSummaryJson(aiSummaryRow)
   const clientContext = clientId
     ? await (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -393,7 +360,6 @@ export default async function ImovelDetailPage({
   const isCloudflareBlock = (text: string | null) =>
     !!text && (text.includes('Please enable cookies') || text.includes('Cloudflare Ray ID'))
   const description = isCloudflareBlock(listing.description) ? null : listing.description
-  const organizedDescription = getOrganizedDescriptionJson(listing)
   const reasoning = isCloudflareBlock(listing.reasoning) ? null : listing.reasoning
   const clientMatch = clientContext
     ? investorMatches.find((match) => match.investor.id === clientContext.client.id)
@@ -409,12 +375,9 @@ export default async function ImovelDetailPage({
         location={location}
         images={images}
         description={description}
-        organizedDescription={organizedDescription}
         reasoning={reasoning}
         locationInsight={locationInsight}
         scoreEntries={scoreEntries}
-        aiSummaryRow={aiSummaryRow}
-        aiSummary={aiSummary}
         omSends={omSends}
       />
     )
@@ -476,7 +439,7 @@ export default async function ImovelDetailPage({
         {images.length > 0 && <ListingImages images={images} />}
 
         {description && (
-          <ListingDescription title={listing.title} description={description} organized={organizedDescription} />
+          <ListingDescription title={listing.title} description={description} />
         )}
 
         {reasoning && (
@@ -544,12 +507,6 @@ export default async function ImovelDetailPage({
         listingId={listing.id}
         locationInsightAvailable={Boolean(locationInsight)}
         initialScores={scoreEntries}
-      />
-
-      <AiDealSummaryCard
-        listingId={listing.id}
-        summaryRow={aiSummaryRow}
-        summary={aiSummary}
       />
 
       <ListingInvestorMatches matches={investorMatches} />

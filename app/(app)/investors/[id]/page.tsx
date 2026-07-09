@@ -15,9 +15,7 @@ import {
   RecalculateClientWorkspaceButton,
 } from '@/components/investors/client-workspace-actions'
 import { loadDeals, loadPersistedMatchesForInvestor, type MatchDeal, type PersistedInvestorMatch } from '@/lib/investors/match-processing'
-import { getAiSummaryJson } from '@/lib/ai/deal-summary-service'
 import { cn } from '@/lib/utils'
-import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
 import type { Database } from '@/types/supabase'
 
 type PageProps = {
@@ -27,7 +25,6 @@ type PageProps = {
 
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
-type AiSummaryRow = Database['public']['Tables']['listing_ai_summaries']['Row']
 
 type WorkspaceTab = 'overview' | 'matches' | 'pipeline' | 'map' | 'saved' | 'exports'
 
@@ -138,19 +135,6 @@ function addressForMatch(match: PersistedInvestorMatch) {
   return addressForDeal(match.deal)
 }
 
-function aiSnippet(summary: AiDealSummary | null) {
-  return summary?.headline
-    ?? summary?.investor_angle
-    ?? summary?.recommended_action
-    ?? 'Resumo IA ainda não gerado para esta oportunidade.'
-}
-
-function summaryConfidence(summary: AiDealSummary | null) {
-  if (!summary?.confidence) return null
-  const labels: Record<string, string> = { low: 'baixa', medium: 'média', high: 'alta' }
-  return labels[summary.confidence] ?? summary.confidence
-}
-
 function coordinateForMatch(match: PersistedInvestorMatch) {
   const lat = typeof match.deal.lat === 'number' ? match.deal.lat : match.deal.location_insight?.latitude
   const lng = typeof match.deal.lng === 'number' ? match.deal.lng : match.deal.location_insight?.longitude
@@ -218,30 +202,6 @@ async function loadClientOpportunityRows(
     .order('updated_at', { ascending: false }) as { data: ClientOpportunityRow[] | null; error: { message?: string } | null }
 
   return error ? [] : data ?? []
-}
-
-async function loadSummaries(
-  supabase: ReturnType<typeof createSupabaseServiceClient>,
-  userId: string,
-  listingIds: string[]
-) {
-  if (listingIds.length === 0) return new Map<string, AiDealSummary | null>()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('listing_ai_summaries') as any)
-    .select('*')
-    .eq('user_id', userId)
-    .in('listing_id', listingIds)
-    .order('updated_at', { ascending: false }) as { data: AiSummaryRow[] | null }
-
-  const summaries = new Map<string, AiDealSummary | null>()
-  for (const row of data ?? []) {
-    if (!summaries.has(row.listing_id)) {
-      summaries.set(row.listing_id, getAiSummaryJson(row) as AiDealSummary | null)
-    }
-  }
-
-  return summaries
 }
 
 async function buildPipelineItems(
@@ -363,12 +323,10 @@ function MatchOpportunityCard({
   client,
   match,
   clientOpportunity,
-  summary,
 }: {
   client: InvestorRow
   match: PersistedInvestorMatch
   clientOpportunity: ClientOpportunityRow | undefined
-  summary: AiDealSummary | null
 }) {
   const status = normalizeStatus(clientOpportunity?.status)
 
@@ -379,11 +337,9 @@ function MatchOpportunityCard({
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={statusVariant(status)}>{STATUS_LABELS[status]}</Badge>
             <Badge variant={statusVariant(match.match_status)}>Match {STATUS_LABELS[match.match_status] ?? match.match_status}</Badge>
-            {summaryConfidence(summary) && <Badge variant="outline">IA {summaryConfidence(summary)}</Badge>}
           </div>
           <h3 className="mt-3 text-base font-semibold text-foreground">{match.deal.title}</h3>
           <p className="mt-1 text-sm text-muted-foreground">{addressForMatch(match)}</p>
-          <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{aiSnippet(summary)}</p>
         </div>
         <div className="grid min-w-[260px] grid-cols-2 gap-2 text-center">
           <MiniScore label="Universal" value={match.deal.opportunity_score ?? '-'} />
@@ -423,12 +379,10 @@ function MatchesTab({
   client,
   matches,
   clientRows,
-  summaries,
 }: {
   client: InvestorRow
   matches: PersistedInvestorMatch[]
   clientRows: ClientOpportunityRow[]
-  summaries: Map<string, AiDealSummary | null>
 }) {
   const stateByListing = clientOpportunityByListing(clientRows)
 
@@ -452,7 +406,6 @@ function MatchesTab({
           client={client}
           match={match}
           clientOpportunity={stateByListing.get(match.listing_id)}
-          summary={summaries.get(match.listing_id) ?? null}
         />
       ))}
     </section>
@@ -462,11 +415,9 @@ function MatchesTab({
 function PipelineTab({
   client,
   items,
-  summaries,
 }: {
   client: InvestorRow
   items: PipelineItem[]
-  summaries: Map<string, AiDealSummary | null>
 }) {
   if (items.length === 0) {
     return (
@@ -493,7 +444,6 @@ function PipelineTab({
               <span className="text-sm text-muted-foreground">{group.length} oportunidade{group.length === 1 ? '' : 's'}</span>
             </div>
             {group.map((item) => {
-              const summary = summaries.get(item.deal.id) ?? null
               const matchScore = item.row.match_score ?? item.match?.match_score ?? null
               const lastUpdated = item.row.last_action_at ?? item.row.updated_at ?? item.row.created_at
 
@@ -507,8 +457,7 @@ function PipelineTab({
                       </div>
                       <h3 className="mt-3 text-base font-semibold text-foreground">{item.deal.title}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{addressForDeal(item.deal)}</p>
-                      <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{aiSnippet(summary)}</p>
-                      {item.row.notes && (
+                                  {item.row.notes && (
                         <p className="mt-3 line-clamp-2 rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
                           {item.row.notes}
                         </p>
@@ -784,11 +733,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   const matches = await loadPersistedMatchesForInvestor(supabase, userId, client.id, 100)
   const clientRows = await loadClientOpportunityRows(supabase, userId, client.id)
   const pipelineItems = await buildPipelineItems(supabase, userId, clientRows, matches)
-  const summaryListingIds = Array.from(new Set([
-    ...matches.map((match) => match.listing_id),
-    ...pipelineItems.map((item) => item.deal.id),
-  ]))
-  const summaries = await loadSummaries(supabase, userId, summaryListingIds)
   const { getOmSendsForInvestorAction } = await import('@/lib/actions/om-actions')
   const omSends = tab === 'exports' ? await getOmSendsForInvestorAction(client.id) : []
 
@@ -838,8 +782,8 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       </nav>
 
       {tab === 'overview' && <OverviewTab client={client} matches={matches} clientRows={clientRows} />}
-      {tab === 'matches' && <MatchesTab client={client} matches={matches} clientRows={clientRows} summaries={summaries} />}
-      {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} summaries={summaries} />}
+      {tab === 'matches' && <MatchesTab client={client} matches={matches} clientRows={clientRows} />}
+      {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}
       {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
       {tab === 'saved' && <SavedTab client={client} items={pipelineItems} />}
       {tab === 'exports' && <InvestorExportsTab investorId={client.id} sends={omSends} />}

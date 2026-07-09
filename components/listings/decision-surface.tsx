@@ -28,10 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { regenerateAiDealSummaryAction } from '@/lib/actions/ai-summary-actions'
 import { enrichListingLocationAction, recalculateListingMatchesAction } from '@/lib/actions/location-insight-actions'
 import { cn } from '@/lib/utils'
-import type { AiDealSummary } from '@/lib/ai/deal-summary-schema'
 import type { Json } from '@/types/supabase'
 import type { MutableRefObject, ReactNode } from 'react'
 
@@ -70,9 +68,6 @@ export type DecisionOpportunity = {
     signals: Json
     computedAt: string | null
   } | null
-  aiSummary: AiDealSummary | null
-  aiSummaryStatus: string
-  aiSummaryGeneratedAt: string | null
   investorMatches: Array<{
     id: string
     investorName: string
@@ -143,12 +138,6 @@ function statusVariant(status: string | null | undefined) {
   return 'secondary' as const
 }
 
-function confidenceVariant(confidence: string | null | undefined) {
-  if (confidence === 'high') return 'default' as const
-  if (confidence === 'medium') return 'outline' as const
-  return 'secondary' as const
-}
-
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
   processing: 'Processando',
@@ -157,12 +146,6 @@ const STATUS_LABELS: Record<string, string> = {
   strong: 'Forte',
   medium: 'Médio',
   weak: 'Fraco',
-}
-
-const CONFIDENCE_LABELS: Record<string, string> = {
-  low: 'baixa',
-  medium: 'média',
-  high: 'alta',
 }
 
 function formatDate(value: string | null | undefined) {
@@ -200,7 +183,6 @@ function fitTags(opportunity: DecisionOpportunity) {
   return uniqueSorted([
     opportunity.score?.fitLabel,
     ...(opportunity.tags ?? []),
-    ...(opportunity.aiSummary?.best_fit ?? []),
   ])
 }
 
@@ -233,10 +215,8 @@ function scoreBreakdown(opportunity: DecisionOpportunity) {
 }
 
 function summarySnippet(opportunity: DecisionOpportunity) {
-  return opportunity.aiSummary?.headline
-    ?? opportunity.aiSummary?.investor_angle
-    ?? jsonStrings(opportunity.score?.signals, 1)[0]
-    ?? 'Sem resumo IA ainda. Use o painel para regenerar quando houver score e contexto local.'
+  return jsonStrings(opportunity.score?.signals, 1)[0]
+    ?? 'Sem sinais suficientes ainda. Enriqueça e calcule o score deste ponto.'
 }
 
 function filterOpportunities(opportunities: DecisionOpportunity[], filters: FilterState) {
@@ -420,11 +400,6 @@ function OpportunityFeed({
                   <Badge variant={opportunity.investorMatches.length > 0 ? 'default' : 'outline'}>
                     {opportunity.investorMatches.length} matches
                   </Badge>
-                  {opportunity.aiSummary?.confidence && (
-                    <Badge variant={confidenceVariant(opportunity.aiSummary.confidence)}>
-                      confiança {CONFIDENCE_LABELS[opportunity.aiSummary.confidence] ?? opportunity.aiSummary.confidence}
-                    </Badge>
-                  )}
                   {opportunity.confidence !== null && (
                     <Badge variant="outline">{opportunity.confidence}% comercial</Badge>
                   )}
@@ -456,7 +431,6 @@ function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
   const router = useRouter()
   const [enrichPending, startEnrichTransition] = useTransition()
   const [matchPending, startMatchTransition] = useTransition()
-  const [summaryPending, startSummaryTransition] = useTransition()
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -494,23 +468,6 @@ function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
         {matchPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
         Recalcular matches
       </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={summaryPending}
-        onClick={() => {
-          startSummaryTransition(async () => {
-            const result = await regenerateAiDealSummaryAction(opportunity.id)
-            if (result.ok) toast.success(result.message)
-            else toast.error(result.message)
-            router.refresh()
-          })
-        }}
-      >
-        {summaryPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Sparkles className="mr-2 size-4" />}
-        Regenerar IA
-      </Button>
       <Button asChild size="sm" variant="ghost">
         <Link href={`/imoveis/${opportunity.id}`}>
           <ArrowUpRight className="mr-2 size-4" />
@@ -533,10 +490,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
   }
 
   const breakdown = scoreBreakdown(opportunity)
-  const risks = [
-    ...(opportunity.aiSummary?.risks ?? []),
-    ...jsonStrings(opportunity.score?.risks, 3),
-  ].slice(0, 4)
+  const risks = jsonStrings(opportunity.score?.risks, 3).slice(0, 4)
 
   return (
     <section className="rounded-md border border-border bg-card">
@@ -546,11 +500,6 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant(opportunity.enrichmentStatus)}>Enriq. {STATUS_LABELS[opportunity.enrichmentStatus] ?? opportunity.enrichmentStatus}</Badge>
               <Badge variant={statusVariant(opportunity.matchingStatus)}>Match {STATUS_LABELS[opportunity.matchingStatus] ?? opportunity.matchingStatus}</Badge>
-              {opportunity.aiSummary?.confidence && (
-                <Badge variant={confidenceVariant(opportunity.aiSummary.confidence)}>
-                  IA {CONFIDENCE_LABELS[opportunity.aiSummary.confidence] ?? opportunity.aiSummary.confidence}
-                </Badge>
-              )}
             </div>
             <h2 className="mt-3 text-2xl font-semibold leading-tight text-foreground">{opportunity.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{opportunity.address ?? opportunity.location ?? 'Sem endereço'}</p>
@@ -605,55 +554,6 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
         </div>
 
         <div className="space-y-5">
-          <div className="rounded-md border border-border bg-background p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Resumo IA do negócio</p>
-              <span className="text-xs text-muted-foreground">{formatDate(opportunity.aiSummaryGeneratedAt)}</span>
-            </div>
-            {opportunity.aiSummary ? (
-              <div className="mt-3 space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">{opportunity.aiSummary.headline}</h3>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {opportunity.aiSummary.best_fit.map((fit, fitIndex) => (
-                      <Badge key={`${opportunity.id}-best-fit-${fitIndex}-${fit}`} variant="outline">{fit}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Forças</p>
-                    <ul className="mt-2 space-y-1 text-sm text-foreground">
-                      {opportunity.aiSummary.strengths.map((item, itemIndex) => (
-                        <li key={`${opportunity.id}-strength-${itemIndex}-${item}`}>- {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Riscos</p>
-                    <ul className="mt-2 space-y-1 text-sm text-foreground">
-                      {opportunity.aiSummary.risks.map((item, itemIndex) => (
-                        <li key={`${opportunity.id}-summary-risk-${itemIndex}-${item}`}>- {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ângulo do investidor</p>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground">{opportunity.aiSummary.investor_angle}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ação recomendada</p>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground">{opportunity.aiSummary.recommended_action}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Status: {STATUS_LABELS[opportunity.aiSummaryStatus] ?? opportunity.aiSummaryStatus}. Gere o resumo quando houver enriquecimento e score.
-              </div>
-            )}
-          </div>
-
           {risks.length > 0 && (
             <div className="rounded-md border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risco / confiança</p>
@@ -812,7 +712,7 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Superfície de decisão V1</p>
           <h1 className="text-3xl font-semibold leading-tight text-foreground">Terminal de oportunidades comerciais</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Foto do imóvel selecionado, ranking, score universal, resumo IA, matches de investidores e inteligência local em uma tela operacional.
+            Foto do imóvel selecionado, ranking, score universal, matches de investidores e inteligência local em uma tela operacional.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">

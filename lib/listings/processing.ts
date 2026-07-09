@@ -2,8 +2,6 @@ import 'server-only'
 import { enrichListingLocationInsight } from '@/lib/location-intelligence/api'
 import { scoreListingService } from '@/lib/scoring/service'
 import { recalculateMatchesForListing } from '@/lib/investors/match-processing'
-import { generateAiDealSummary } from '@/lib/ai/deal-summary-service'
-import { generateDescriptionForListing } from '@/lib/ai/description-organizer-service'
 import type { Database, Json } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
@@ -16,8 +14,6 @@ type ListingProcessingResult = {
   enriched: boolean
   scored: boolean
   matched: boolean
-  aiSummarized: boolean
-  descriptionOrganized: boolean
   skipped: boolean
   error?: string
 }
@@ -74,11 +70,11 @@ export async function enrichScoreAndMatchListing(
 ): Promise<ListingProcessingResult> {
   const listing = await loadListingForProcessing(supabase, userId, listingId)
   if (!listing) {
-    return { listingId, enriched: false, scored: false, matched: false, aiSummarized: false, descriptionOrganized: false, skipped: false, error: 'Imóvel não encontrado.' }
+    return { listingId, enriched: false, scored: false, matched: false, skipped: false, error: 'Imóvel não encontrado.' }
   }
 
   if (!options.force && listing.enrichment_status === 'processing') {
-    return { listingId, enriched: false, scored: false, matched: false, aiSummarized: false, descriptionOrganized: false, skipped: true }
+    return { listingId, enriched: false, scored: false, matched: false, skipped: true }
   }
 
   await updateListingProcessing(supabase, userId, listingId, {
@@ -103,7 +99,7 @@ export async function enrichScoreAndMatchListing(
       enrichment_last_processed_at: new Date().toISOString(),
     })
 
-    return { listingId, enriched: false, scored: false, matched: false, aiSummarized: false, descriptionOrganized: false, skipped: false, error: message }
+    return { listingId, enriched: false, scored: false, matched: false, skipped: false, error: message }
   }
 
   await updateListingProcessing(supabase, userId, listingId, {
@@ -131,19 +127,14 @@ export async function enrichScoreAndMatchListing(
       matching_error: matching.error,
       matching_last_processed_at: new Date().toISOString(),
     })
-    return { listingId, enriched: true, scored, matched: false, aiSummarized: false, descriptionOrganized: false, skipped: false, error: matching.error }
+    return { listingId, enriched: true, scored, matched: false, skipped: false, error: matching.error }
   }
-
-  const aiSummary = await generateAiDealSummary(supabase, userId, listingId, { force: false })
-  const description = await generateDescriptionForListing(supabase, userId, listingId, { force: options.force })
 
   return {
     listingId,
     enriched: true,
     scored,
     matched: !matching.skipped,
-    aiSummarized: aiSummary.ok,
-    descriptionOrganized: description.ok,
     skipped: matching.skipped,
   }
 }
@@ -225,8 +216,6 @@ export async function processImportRunListings(
     enrichedCount: results.filter((result) => result.enriched).length,
     scoredCount: results.filter((result) => result.scored).length,
     matchedCount: results.filter((result) => result.matched).length,
-    aiSummaryCount: results.filter((result) => result.aiSummarized).length,
-    descriptionOrganizedCount: results.filter((result) => result.descriptionOrganized).length,
     skippedCount: results.filter((result) => result.skipped).length,
     failedCount: results.filter((result) => result.error).length,
     processedAt: new Date().toISOString(),
