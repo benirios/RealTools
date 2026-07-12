@@ -47,46 +47,6 @@ export function RecalculateClientWorkspaceButton({ clientId }: { clientId: strin
   )
 }
 
-export function ClientOpportunityStatusButtons({
-  clientId,
-  opportunityId,
-}: {
-  clientId: string
-  opportunityId: string
-}) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-
-  function update(status: Status) {
-    startTransition(async () => {
-      const result = await updateClientOpportunityStatusAction(clientId, opportunityId, status)
-      if (result.ok) {
-        toast.success(result.message)
-        router.refresh()
-      } else {
-        toast.error(result.message)
-      }
-    })
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      <Button size="sm" variant="outline" disabled={isPending} onClick={() => update('saved')}>
-        {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Star className="mr-2 size-4" />}
-        Salvar no pipeline
-      </Button>
-      <Button size="sm" variant="outline" disabled={isPending} onClick={() => update('sent')}>
-        <Send className="mr-2 size-4" />
-        Marcar enviada
-      </Button>
-      <Button size="sm" variant="ghost" disabled={isPending} onClick={() => update('rejected')}>
-        <ThumbsDown className="mr-2 size-4" />
-        Rejeitar
-      </Button>
-    </div>
-  )
-}
-
 export function ClientOpportunityPipelineActions({
   clientId,
   opportunityId,

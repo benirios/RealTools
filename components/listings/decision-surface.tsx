@@ -96,6 +96,7 @@ type Props = {
   opportunities: DecisionOpportunity[]
   loadError?: string | null
   emptyStateHref?: string
+  clientId?: string
 }
 
 type FilterState = {
@@ -428,7 +429,7 @@ function OpportunityFeed({
   )
 }
 
-function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
+function ActionButtons({ opportunity, clientId }: { opportunity: DecisionOpportunity; clientId?: string }) {
   const router = useRouter()
   const [enrichPending, startEnrichTransition] = useTransition()
   const [matchPending, startMatchTransition] = useTransition()
@@ -470,7 +471,7 @@ function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
         Recalcular matches
       </Button>
       <Button asChild size="sm" variant="ghost">
-        <Link href={`/imoveis/${opportunity.id}`}>
+        <Link href={clientId ? `/imoveis/${opportunity.id}?clientId=${clientId}` : `/imoveis/${opportunity.id}`}>
           <ArrowUpRight className="mr-2 size-4" />
           Ver detalhe
         </Link>
@@ -479,7 +480,7 @@ function ActionButtons({ opportunity }: { opportunity: DecisionOpportunity }) {
   )
 }
 
-function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity | null }) {
+function IntelligencePanel({ opportunity, clientId }: { opportunity: DecisionOpportunity | null; clientId?: string }) {
   if (!opportunity) {
     return (
       <section className="rounded-md border border-border bg-card p-8 text-center">
@@ -505,7 +506,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
             <h2 className="mt-3 text-2xl font-semibold leading-tight text-foreground">{opportunity.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{opportunity.address ?? opportunity.location ?? 'Sem endereço'}</p>
           </div>
-          <ActionButtons opportunity={opportunity} />
+          <ActionButtons opportunity={opportunity} clientId={clientId} />
         </div>
       </div>
 
@@ -645,7 +646,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
   )
 }
 
-export function DecisionSurface({ opportunities, loadError, emptyStateHref = '/investors' }: Props) {
+export function DecisionSurface({ opportunities, loadError, emptyStateHref = '/investors', clientId }: Props) {
   const [filters, setFilters] = useState<FilterState>({
     query: '',
     minScore: '',
@@ -840,7 +841,7 @@ export function DecisionSurface({ opportunities, loadError, emptyStateHref = '/i
             <span>{opportunities.length - photoCount} sem foto</span>
           </div>
 
-          <IntelligencePanel opportunity={selectedOpportunity} />
+          <IntelligencePanel opportunity={selectedOpportunity} clientId={clientId} />
         </>
       )}
     </div>

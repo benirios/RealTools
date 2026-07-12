@@ -146,7 +146,7 @@ function ClientOpportunityRecommendationView({
     <div className="mx-auto w-full max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={`/investors/${client.id}?tab=matches`}
+          href={`/investors/${client.id}?tab=decisao`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
-import { ArrowUpRight, Clock, FileText, KanbanSquare, MapPin, Send, Star, Target } from 'lucide-react'
+import { ArrowUpRight, Clock, FileText, KanbanSquare, MapPin, Send } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { PageContent } from '@/components/page-content'
@@ -10,7 +10,6 @@ import { InvestorFormModal } from '@/components/investors/investor-form-modal'
 import {
   ClientOpportunityNotesForm,
   ClientOpportunityPipelineActions,
-  ClientOpportunityStatusButtons,
   FindClientOpportunitiesForm,
   RecalculateClientWorkspaceButton,
 } from '@/components/investors/client-workspace-actions'
@@ -36,17 +35,15 @@ type PageProps = {
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 
-type WorkspaceTab = 'overview' | 'matches' | 'pipeline' | 'map' | 'saved' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
+type WorkspaceTab = 'overview' | 'pipeline' | 'map' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
 
 const TABS: Array<{ value: WorkspaceTab; label: string }> = [
   { value: 'overview', label: 'Visão geral' },
   { value: 'pesquisas', label: 'Pesquisas' },
   { value: 'imoveis', label: 'Imóveis' },
   { value: 'decisao', label: 'Decisão' },
-  { value: 'matches', label: 'Matches' },
   { value: 'pipeline', label: 'Pipeline' },
   { value: 'map', label: 'Mapa' },
-  { value: 'saved', label: 'Salvos' },
   { value: 'exports', label: 'Exportações' },
 ]
 
@@ -184,10 +181,6 @@ function mapPointStyle(match: PersistedInvestorMatch, mapped: PersistedInvestorM
     left: `${8 + ((coordinate.lng - minLng) / lngRange) * 84}%`,
     top: `${8 + ((maxLat - coordinate.lat) / latRange) * 84}%`,
   }
-}
-
-function clientOpportunityByListing(rows: ClientOpportunityRow[]) {
-  return new Map(rows.map((row) => [row.opportunity_id, row]))
 }
 
 function tabHref(clientId: string, tab: WorkspaceTab) {
@@ -332,96 +325,12 @@ function TagRow({ label, values }: { label: string; values: string[] }) {
   )
 }
 
-function MatchOpportunityCard({
-  client,
-  match,
-  clientOpportunity,
-}: {
-  client: InvestorRow
-  match: PersistedInvestorMatch
-  clientOpportunity: ClientOpportunityRow | undefined
-}) {
-  const status = normalizeStatus(clientOpportunity?.status)
-
-  return (
-    <article className="rounded-md border border-border bg-card p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={statusVariant(status)}>{STATUS_LABELS[status]}</Badge>
-            <Badge variant={statusVariant(match.match_status)}>Match {STATUS_LABELS[match.match_status] ?? match.match_status}</Badge>
-          </div>
-          <h3 className="mt-3 text-base font-semibold text-foreground">{match.deal.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{addressForMatch(match)}</p>
-        </div>
-        <div className="grid min-w-[260px] grid-cols-2 gap-2 text-center">
-          <MiniScore label="Universal" value={match.deal.opportunity_score ?? '-'} />
-          <MiniScore label="Cliente" value={`${match.match_score}%`} />
-        </div>
-      </div>
-      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>{match.deal.price_text ?? formatMoney(match.deal.price_amount) ?? 'Preço indisponível'}</span>
-          <span>·</span>
-          <span>{match.deal.property_type ?? match.deal.commercial_type ?? 'Tipo indisponível'}</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/imoveis/${match.listing_id}?clientId=${client.id}`}>
-              <ArrowUpRight className="mr-2 size-4" />
-              Abrir
-            </Link>
-          </Button>
-          <ClientOpportunityStatusButtons clientId={client.id} opportunityId={match.listing_id} />
-        </div>
-      </div>
-    </article>
-  )
-}
-
 function MiniScore({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-md border border-border bg-background px-3 py-2">
       <p className="text-[11px] uppercase text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
     </div>
-  )
-}
-
-function MatchesTab({
-  client,
-  matches,
-  clientRows,
-}: {
-  client: InvestorRow
-  matches: PersistedInvestorMatch[]
-  clientRows: ClientOpportunityRow[]
-}) {
-  const stateByListing = clientOpportunityByListing(clientRows)
-
-  if (matches.length === 0) {
-    return (
-      <div className="rounded-md border border-border bg-card p-8 text-center">
-        <Target className="mx-auto mb-3 size-9 text-muted-foreground" />
-        <h2 className="text-lg font-semibold text-foreground">Nenhum match para este cliente ainda</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Use a busca do workspace ou recalcule os matches após importar oportunidades globais.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <section className="space-y-3">
-      {matches.map((match) => (
-        <MatchOpportunityCard
-          key={match.id}
-          client={client}
-          match={match}
-          clientOpportunity={stateByListing.get(match.listing_id)}
-        />
-      ))}
-    </section>
   )
 }
 
@@ -438,7 +347,7 @@ function PipelineTab({
         <KanbanSquare className="mx-auto mb-3 size-9 text-muted-foreground" />
         <h2 className="text-lg font-semibold text-foreground">Pipeline vazio para este cliente</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Salve, envie ou rejeite oportunidades na aba Matches para criar o acompanhamento específico deste cliente.
+          Abra um imóvel pela aba Decisão ou Imóveis e salve, envie ou rejeite para criar o acompanhamento específico deste cliente.
         </p>
       </div>
     )
@@ -590,70 +499,6 @@ function ClientMapTab({
   )
 }
 
-function SavedTab({
-  client,
-  items,
-}: {
-  client: InvestorRow
-  items: PipelineItem[]
-}) {
-  const savedStatuses = new Set(['saved', 'sent', 'interested', 'negotiating', 'closed'])
-  const savedItems = items.filter((item) => savedStatuses.has(normalizeStatus(item.row.status)))
-
-  if (savedItems.length === 0) {
-    return (
-      <div className="rounded-md border border-border bg-card p-8 text-center">
-        <Star className="mx-auto mb-3 size-9 text-muted-foreground" />
-        <h2 className="text-lg font-semibold text-foreground">Nenhuma oportunidade salva para este cliente</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Salve uma oportunidade na aba Matches para montar a shortlist do cliente.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <section className="space-y-3">
-      {savedItems.map((item) => {
-        const status = normalizeStatus(item.row.status)
-        const matchScore = item.row.match_score ?? item.match?.match_score ?? null
-
-        return (
-          <article key={item.row.id} className="space-y-4 rounded-md border border-border bg-card p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <Badge variant={statusVariant(status)}>{STATUS_LABELS[status]}</Badge>
-                <h3 className="mt-3 text-base font-semibold text-foreground">{item.deal.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{addressForDeal(item.deal)}</p>
-                {item.row.notes && (
-                  <p className="mt-3 line-clamp-2 rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-                    {item.row.notes}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <MiniScore label="Match cliente" value={matchScore !== null ? `${matchScore}%` : '-'} />
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/imoveis/${item.deal.id}?clientId=${client.id}`}>
-                    <ArrowUpRight className="mr-2 size-4" />
-                    Abrir
-                  </Link>
-                </Button>
-              </div>
-            </div>
-            <ClientOpportunityNotesForm
-              clientId={client.id}
-              opportunityId={item.deal.id}
-              status={status}
-              notes={item.row.notes ?? null}
-            />
-          </article>
-        )
-      })}
-    </section>
-  )
-}
-
 function formatDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -774,7 +619,7 @@ function ImoveisTab({ listings }: { listings: ListingSummary[] }) {
 }
 
 function DecisaoTab({ clientId, opportunities, loadError }: { clientId: string; opportunities: DecisionOpportunity[]; loadError?: string }) {
-  return <DecisionSurface opportunities={opportunities} loadError={loadError} emptyStateHref={`/investors/${clientId}?tab=pesquisas`} />
+  return <DecisionSurface opportunities={opportunities} loadError={loadError} emptyStateHref={`/investors/${clientId}?tab=pesquisas`} clientId={clientId} />
 }
 
 export default async function InvestorDetailPage({ params, searchParams }: PageProps) {
@@ -885,10 +730,8 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       {tab === 'pesquisas' && <PesquisasTab client={client} targets={importTargets} runs={importRuns} />}
       {tab === 'imoveis' && <ImoveisTab listings={clientListings} />}
       {tab === 'decisao' && <DecisaoTab clientId={client.id} opportunities={decisionOpportunities} loadError={decisionLoadError} />}
-      {tab === 'matches' && <MatchesTab client={client} matches={matches} clientRows={clientRows} />}
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}
       {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
-      {tab === 'saved' && <SavedTab client={client} items={pipelineItems} />}
       {tab === 'exports' && <InvestorExportsTab investorId={client.id} sends={omSends} />}
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
