@@ -1,5 +1,6 @@
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { recordInvestorOmOpenByToken } from '@/lib/tracking/record-om-open'
+import { segmentDescription } from '@/lib/listings/description-segmenter'
 import Image from 'next/image'
 // DO NOT import createSupabaseServerClient — cookies() fails for unauthenticated requests.
 // Middleware matcher includes /om(.*) as public so no auth is attempted on this route.
@@ -38,6 +39,7 @@ export default async function ListingOmPage({
 
   const address = listing.address_text ?? listing.location_text ?? [listing.city, listing.state].filter(Boolean).join(', ') ?? ''
   const typeLabel = listing.commercial_type ?? listing.property_type ?? 'Imóvel comercial'
+  const segmented = listing.description ? segmentDescription(listing.description, listing.title) : null
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -83,12 +85,16 @@ export default async function ListingOmPage({
       </section>
 
       {/* Description */}
-      {listing.description && (
+      {segmented && segmented.paragraphs.length > 0 && (
         <section className="border-b border-border px-8 py-8">
           <h2 className="mb-6 text-xl font-semibold text-foreground">Visão Geral do Imóvel</h2>
-          <p className="text-base leading-relaxed text-muted-foreground" style={{ maxWidth: '72ch' }}>
-            {listing.description}
-          </p>
+          <div className="space-y-3" style={{ maxWidth: '72ch' }}>
+            {segmented.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-base leading-relaxed text-muted-foreground">
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </section>
       )}
 
