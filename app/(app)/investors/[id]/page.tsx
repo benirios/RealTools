@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
-import { ArrowUpRight, Clock, FileText, KanbanSquare, MapPin, Send } from 'lucide-react'
+import { ArrowUpRight, Clock, FileText, KanbanSquare, Send } from 'lucide-react'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { PageContent } from '@/components/page-content'
@@ -35,7 +35,7 @@ type PageProps = {
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 
-type WorkspaceTab = 'overview' | 'pipeline' | 'map' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
+type WorkspaceTab = 'overview' | 'pipeline' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
 
 const TABS: Array<{ value: WorkspaceTab; label: string }> = [
   { value: 'overview', label: 'Visão geral' },
@@ -43,7 +43,6 @@ const TABS: Array<{ value: WorkspaceTab; label: string }> = [
   { value: 'imoveis', label: 'Imóveis' },
   { value: 'decisao', label: 'Decisão' },
   { value: 'pipeline', label: 'Pipeline' },
-  { value: 'map', label: 'Mapa' },
   { value: 'exports', label: 'Exportações' },
 ]
 
@@ -140,49 +139,6 @@ function addressForDeal(deal: MatchDeal) {
     ?? [deal.city, deal.state].filter(Boolean).join(', ')
     ?? '-'
 }
-
-function addressForMatch(match: PersistedInvestorMatch) {
-  return addressForDeal(match.deal)
-}
-
-function coordinateForMatch(match: PersistedInvestorMatch) {
-  const lat = typeof match.deal.lat === 'number' ? match.deal.lat : match.deal.location_insight?.latitude
-  const lng = typeof match.deal.lng === 'number' ? match.deal.lng : match.deal.location_insight?.longitude
-
-  if (typeof lat !== 'number' || typeof lng !== 'number') return null
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng }
-}
-
-function mapTone(score: number) {
-  if (score >= 80) return 'bg-emerald-500'
-  if (score >= 60) return 'bg-amber-500'
-  return 'bg-zinc-500'
-}
-
-function mapPointStyle(match: PersistedInvestorMatch, mapped: PersistedInvestorMatch[]) {
-  const points = mapped.flatMap((item) => {
-    const coordinate = coordinateForMatch(item)
-    return coordinate ? [coordinate] : []
-  })
-  const coordinate = coordinateForMatch(match)
-  if (!coordinate || points.length === 0) return {}
-
-  const lats = points.map((point) => point.lat)
-  const lngs = points.map((point) => point.lng)
-  const minLat = Math.min(...lats)
-  const maxLat = Math.max(...lats)
-  const minLng = Math.min(...lngs)
-  const maxLng = Math.max(...lngs)
-  const latRange = Math.max(maxLat - minLat, 0.01)
-  const lngRange = Math.max(maxLng - minLng, 0.01)
-
-  return {
-    left: `${8 + ((coordinate.lng - minLng) / lngRange) * 84}%`,
-    top: `${8 + ((maxLat - coordinate.lat) / latRange) * 84}%`,
-  }
-}
-
 function tabHref(clientId: string, tab: WorkspaceTab) {
   return `/investors/${clientId}?tab=${tab}`
 }
@@ -426,79 +382,6 @@ function PipelineTab({
   )
 }
 
-function ClientMapTab({
-  clientId,
-  matches,
-  selectedOpportunityId,
-}: {
-  clientId: string
-  matches: PersistedInvestorMatch[]
-  selectedOpportunityId: string | undefined
-}) {
-  const mapped = matches.filter((match) => coordinateForMatch(match))
-  const selected = mapped.find((match) => match.listing_id === selectedOpportunityId) ?? mapped[0] ?? null
-
-  return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <section className="overflow-hidden rounded-md border border-border bg-card">
-        <div className="border-b border-border p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mapa do cliente</p>
-          <h2 className="text-lg font-semibold text-foreground">{mapped.length} oportunidades com coordenadas</h2>
-        </div>
-        <div className="relative h-[520px] bg-muted">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:54px_54px]" />
-          {mapped.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <MapPin className="mb-3 size-9 text-muted-foreground" />
-              <h3 className="text-base font-semibold text-foreground">Sem oportunidades mapeáveis</h3>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Enriquecimento local ou coordenadas são necessários para exibir pins.
-              </p>
-            </div>
-          ) : (
-            mapped.map((match) => (
-              <Link
-                key={match.id}
-                href={`/investors/${clientId}?tab=map&opportunity=${match.listing_id}`}
-                className={cn(
-                  'absolute z-10 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-md transition-transform hover:scale-110',
-                  mapTone(match.match_score),
-                  selected?.listing_id === match.listing_id && 'ring-4 ring-foreground/20'
-                )}
-                style={mapPointStyle(match, mapped)}
-                title={`${match.deal.title} · ${match.match_score}%`}
-              >
-                {match.match_score}
-              </Link>
-            ))
-          )}
-        </div>
-      </section>
-      <section className="rounded-md border border-border bg-card p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Inteligência da oportunidade</p>
-        {selected ? (
-          <div className="mt-3 space-y-4">
-            <div>
-              <h3 className="text-base font-semibold text-foreground">{selected.deal.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{addressForMatch(selected)}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <MiniScore label="Match cliente" value={`${selected.match_score}%`} />
-              <MiniScore label="Score global" value={selected.deal.opportunity_score ?? '-'} />
-            </div>
-            <p className="text-sm text-muted-foreground">{selected.explanation}</p>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/imoveis/${selected.listing_id}?clientId=${clientId}`}>Abrir oportunidade</Link>
-            </Button>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-muted-foreground">Clique em um pin para abrir o painel.</p>
-        )}
-      </section>
-    </div>
-  )
-}
-
 function formatDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -626,7 +509,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   const { id } = await params
   const query = await searchParams
   const tab = normalizeTab(query?.tab)
-  const selectedOpportunityId = firstParam(query?.opportunity)
   const { userId } = await auth()
   if (!userId) redirect('/auth/login')
 
@@ -699,7 +581,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Workspace do cliente</p>
             <h1 className="text-3xl font-semibold leading-tight text-foreground">{client.name}</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Pipeline deste cliente: pesquise imóveis para ele, acompanhe o que foi encontrado, ranqueie por oportunidade e gerencie matches, shortlist, mapa e notas.
+              Pipeline deste cliente: pesquise imóveis para ele, acompanhe o que foi encontrado, ranqueie por oportunidade e gerencie shortlist e notas.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -731,7 +613,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       {tab === 'imoveis' && <ImoveisTab listings={clientListings} />}
       {tab === 'decisao' && <DecisaoTab clientId={client.id} opportunities={decisionOpportunities} loadError={decisionLoadError} />}
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}
-      {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
       {tab === 'exports' && <InvestorExportsTab investorId={client.id} sends={omSends} />}
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
