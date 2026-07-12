@@ -68,7 +68,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
   const supabase = createSupabaseServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: run } = await (supabase.from('listing_import_runs') as any)
-    .select('id, source, status, created_count, updated_count, failed_count, error_message, metadata, completed_at, started_at')
+    .select('id, source, status, created_count, updated_count, failed_count, error_message, metadata, completed_at, started_at, investor_id')
     .eq('id', id)
     .eq('user_id', userId)
     .single()
@@ -114,7 +114,7 @@ export default async function ImportRunListingsPage({ params }: PageProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-3 mb-2">
-            <Link href="/listings/import">Voltar para Importações</Link>
+            <Link href={run.investor_id ? `/investors/${run.investor_id}?tab=pesquisas` : '/investors'}>Voltar para Pesquisas</Link>
           </Button>
           <h1 className="text-2xl font-semibold leading-tight text-foreground">Imóveis Coletados</h1>
           <p className="mt-1 text-sm text-muted-foreground">

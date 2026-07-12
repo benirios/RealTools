@@ -386,7 +386,7 @@ export default async function ImovelDetailPage({
     <PageContent>
     <div className="mx-auto w-full max-w-4xl space-y-6">
       <Link
-        href="/imoveis"
+        href={listing.investor_id ? `/investors/${listing.investor_id}?tab=imoveis` : '/investors'}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

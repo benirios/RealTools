@@ -95,6 +95,7 @@ export type DecisionOpportunity = {
 type Props = {
   opportunities: DecisionOpportunity[]
   loadError?: string | null
+  emptyStateHref?: string
 }
 
 type FilterState = {
@@ -644,7 +645,7 @@ function IntelligencePanel({ opportunity }: { opportunity: DecisionOpportunity |
   )
 }
 
-export function DecisionSurface({ opportunities, loadError }: Props) {
+export function DecisionSurface({ opportunities, loadError, emptyStateHref = '/investors' }: Props) {
   const [filters, setFilters] = useState<FilterState>({
     query: '',
     minScore: '',
@@ -810,10 +811,10 @@ export function DecisionSurface({ opportunities, loadError }: Props) {
           <Building2 className="mb-4 size-10 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Nenhum ponto comercial ainda</h2>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            Importe pesquisas ou crie enriquecimentos para alimentar a superfície de decisão.
+            Busque imóveis para este cliente na aba Pesquisas para alimentar a superfície de decisão.
           </p>
           <Button asChild className="mt-5">
-            <Link href="/listings/import">
+            <Link href={emptyStateHref}>
               <ExternalLink className="mr-2 size-4" />
               Abrir pesquisas
             </Link>

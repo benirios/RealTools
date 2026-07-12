@@ -5,16 +5,32 @@ import { redirect } from 'next/navigation'
 import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { completeImportRun, failImportRun, startImportRun } from '@/lib/listings/import-runs'
-import { upsertListing } from '@/lib/listings/ingestion'
+import { upsertListing, upsertListingImportTarget } from '@/lib/listings/ingestion'
 import { scrapeOlxListings } from '@/lib/listings/olx'
 import { processImportRunListings } from '@/lib/listings/processing'
 import { recalculateMatchesForInvestor } from '@/lib/investors/match-processing'
+import { ListingImportTargetSchema } from '@/lib/schemas/listing'
 import type { Database } from '@/types/supabase'
 
 type Supabase = ReturnType<typeof createSupabaseServiceClient>
 type ClientOpportunityStatus = 'suggested' | 'saved' | 'sent' | 'interested' | 'rejected' | 'negotiating' | 'closed'
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 type InvestorListingMatchRow = Database['public']['Tables']['investor_listing_matches']['Row']
+
+export type ImportActionResult = {
+  ok: boolean
+  message: string
+}
+
+export type CreateImportTargetState = {
+  errors?: {
+    state?: string[]
+    city?: string[]
+    searchTerm?: string[]
+    general?: string[]
+  }
+  message?: string
+}
 
 const STATUS_VALUES = new Set<ClientOpportunityStatus>([
   'suggested',
@@ -293,6 +309,7 @@ export async function runClientOlxSearchImportAction(
   const supabase = createSupabaseServiceClient()
   const { data: run, error: runError } = await startImportRun(supabase, userId, {
     source: 'olx',
+    investorId: clientId,
     metadata: {
       importType: 'client_workspace_search',
       clientId,
@@ -320,7 +337,7 @@ export async function runClientOlxSearchImportAction(
     const savedUrls: string[] = []
 
     for (const listing of listings) {
-      const { error } = await upsertListing(supabase, userId, listing)
+      const { error } = await upsertListing(supabase, userId, listing, clientId)
       if (error) {
         failedCount += 1
         failures.push(`${listing.sourceUrl}: ${error.message ?? 'falha ao salvar'}`)
@@ -370,14 +387,12 @@ export async function runClientOlxSearchImportAction(
     await recalculateMatchesForInvestor(supabase, userId, clientId, true)
     const syncedCount = await syncClientOpportunitiesForMatches(supabase, userId, clientId, listingIds)
 
-    revalidatePath('/listings/import')
-    revalidatePath('/imoveis')
     revalidatePath('/investors')
     revalidatePath(`/investors/${clientId}`)
     revalidatePath(`/listings/import/runs/${run.id}`)
 
     return {
-      message: `${savedCount} oportunidades globais salvas, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidas; ${syncedCount} ligadas a este cliente.`,
+      message: `${savedCount} imóveis salvos no pipeline do cliente, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos; ${syncedCount} ligados a este cliente.`,
     }
   } catch (error) {
     const message = getErrorMessage(error)
@@ -392,4 +407,185 @@ export async function runClientOlxSearchImportAction(
     revalidatePath(`/investors/${clientId}`)
     return { errors: { general: [message] } }
   }
+}
+
+export async function createClientImportTargetAction(
+  _prevState: CreateImportTargetState,
+  formData: FormData
+): Promise<CreateImportTargetState> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const clientId = String(formData.get('clientId') ?? '')
+  if (!clientId) return { errors: { general: ['Cliente ausente.'] } }
+
+  const parsed = ListingImportTargetSchema.safeParse({
+    source: String(formData.get('source') ?? 'olx'),
+    country: String(formData.get('country') ?? 'BR').trim() || 'BR',
+    state: String(formData.get('state') ?? '').trim().toUpperCase(),
+    city: String(formData.get('city') ?? '').trim(),
+    searchTerm: String(formData.get('searchTerm') ?? '').trim(),
+    isActive: true,
+  })
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+    return {
+      errors: {
+        state: fieldErrors.state,
+        city: fieldErrors.city,
+        searchTerm: fieldErrors.searchTerm,
+      },
+    }
+  }
+
+  const supabase = createSupabaseServiceClient()
+  const { error } = await upsertListingImportTarget(supabase, userId, parsed.data, clientId)
+
+  if (error) return { errors: { general: ['Não foi possível salvar o alvo de importação.'] } }
+
+  revalidatePath(`/investors/${clientId}`)
+  return { message: 'Alvo de importação criado.' }
+}
+
+export async function deleteClientImportTargetAction(clientId: string, targetId: string): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listing_import_targets') as any)
+    .delete()
+    .eq('id', targetId)
+    .eq('user_id', userId)
+    .eq('investor_id', clientId)
+
+  if (error) return { ok: false, message: 'Falha ao remover o alvo de importação.' }
+
+  revalidatePath(`/investors/${clientId}`)
+  return { ok: true, message: 'Alvo de importação removido.' }
+}
+
+export async function toggleClientImportTargetAction(
+  clientId: string,
+  targetId: string,
+  nextActive: boolean
+): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listing_import_targets') as any)
+    .update({ is_active: nextActive, updated_at: new Date().toISOString() })
+    .eq('id', targetId)
+    .eq('user_id', userId)
+    .eq('investor_id', clientId)
+
+  if (error) return { ok: false, message: 'Falha ao atualizar o alvo de importação.' }
+
+  revalidatePath(`/investors/${clientId}`)
+  return { ok: true, message: nextActive ? 'Alvo ativado.' : 'Alvo desativado.' }
+}
+
+export async function runClientImportTargetAction(clientId: string, targetId: string): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: target } = await (supabase.from('listing_import_targets') as any)
+    .select('*')
+    .eq('id', targetId)
+    .eq('user_id', userId)
+    .eq('investor_id', clientId)
+    .eq('source', 'olx')
+    .eq('is_active', true)
+    .single()
+
+  if (!target) return { ok: false, message: 'Alvo de importação não encontrado ou inativo.' }
+
+  const { data: run, error: runError } = await startImportRun(supabase, userId, {
+    source: 'olx',
+    targetId: target.id,
+    investorId: clientId,
+    metadata: { clientId, state: target.state, city: target.city, searchTerm: target.search_term },
+  })
+
+  if (runError || !run) return { ok: false, message: 'Não foi possível iniciar a importação.' }
+
+  try {
+    const listings = await scrapeOlxListings({ state: target.state, city: target.city, searchTerm: target.search_term, maxListings: 25 })
+
+    let createdCount = 0
+    let failedCount = 0
+    const failures: string[] = []
+    const savedUrls: string[] = []
+
+    for (const listing of listings) {
+      const { error } = await upsertListing(supabase, userId, listing, clientId)
+      if (error) { failedCount += 1; failures.push(`${listing.sourceUrl}: ${error.message ?? 'falha ao salvar'}`) }
+      else { createdCount += 1; savedUrls.push(listing.sourceUrl) }
+    }
+
+    await completeImportRun(supabase, run.id, userId,
+      { createdCount, updatedCount: 0, skippedCount: 0, failedCount },
+      { targetId: target.id, clientId, source: 'olx', successfulUpserts: createdCount, savedUrls, failures: failures.slice(0, 10) }
+    )
+
+    const automation = await processImportRunListings(supabase, userId, run.id, savedUrls)
+    await recalculateMatchesForInvestor(supabase, userId, clientId, true)
+
+    revalidatePath(`/investors/${clientId}`)
+    return {
+      ok: failedCount === 0,
+      message: `${createdCount} salvos, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos.`,
+    }
+  } catch (error) {
+    const message = getErrorMessage(error)
+    await failImportRun(supabase, run.id, userId, message, { targetId: target.id, clientId, source: 'olx' })
+    revalidatePath(`/investors/${clientId}`)
+    return { ok: false, message }
+  }
+}
+
+export async function shareListingWithInvestorAction(listingId: string, investorId: string): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existingMatch } = await (supabase.from('investor_listing_matches') as any)
+    .select('id')
+    .eq('user_id', userId)
+    .eq('investor_id', investorId)
+    .eq('listing_id', listingId)
+    .maybeSingle()
+
+  if (existingMatch) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('investor_listing_matches') as any)
+      .update({ is_manual_share: true })
+      .eq('id', existingMatch.id)
+
+    if (error) return { ok: false, message: 'Falha ao compartilhar o imóvel.' }
+  } else {
+    // No algorithmic match row yet (listing hasn't been scored for this
+    // investor) — compute one now so the share carries a real compatibility
+    // score instead of an empty row.
+    await recalculateMatchesForInvestor(supabase, userId, investorId, true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('investor_listing_matches') as any)
+      .update({ is_manual_share: true })
+      .eq('user_id', userId)
+      .eq('investor_id', investorId)
+      .eq('listing_id', listingId)
+
+    if (error) return { ok: false, message: 'Falha ao compartilhar o imóvel.' }
+  }
+
+  revalidatePath(`/investors/${investorId}`)
+  revalidatePath(`/imoveis/${listingId}`)
+  return { ok: true, message: 'Imóvel compartilhado com o cliente.' }
 }

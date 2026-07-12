@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, Clock, Eye, Mail, ChevronDown } from 'lucide-react'
+import { toast } from 'sonner'
+import { CheckCircle2, Clock, Eye, Mail, ChevronDown, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { sendOmAction, getOmSendsForListingAction } from '@/lib/actions/om-actions'
+import { shareListingWithInvestorAction } from '@/lib/actions/client-opportunity-actions'
 import type { PersistedListingMatch } from '@/lib/investors/match-processing'
 
 interface OmRecipientsCardProps {
@@ -57,6 +59,8 @@ export function OmRecipientsCard({ listingId, matches, initialSends }: OmRecipie
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [sends, setSends] = useState(initialSends)
   const [result, setResult] = useState<{ status: 'sent' | 'error'; message?: string; count?: number } | null>(null)
+  const [shared, setShared] = useState<Set<string>>(new Set(matches.filter((m) => m.is_manual_share).map((m) => m.investor.id)))
+  const [sharingId, setSharingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const eligibleMatches = matches.filter((m) => m.investor.email)
@@ -82,6 +86,20 @@ export function OmRecipientsCard({ listingId, matches, initialSends }: OmRecipie
       const next = new Set(prev)
       if (next.has(investorId)) { next.delete(investorId) } else { next.add(investorId) }
       return next
+    })
+  }
+
+  function share(investorId: string) {
+    setSharingId(investorId)
+    startTransition(async () => {
+      const res = await shareListingWithInvestorAction(listingId, investorId)
+      if (res.ok) {
+        toast.success(res.message)
+        setShared((prev) => new Set(prev).add(investorId))
+      } else {
+        toast.error(res.message)
+      }
+      setSharingId(null)
     })
   }
 
@@ -150,6 +168,23 @@ export function OmRecipientsCard({ listingId, matches, initialSends }: OmRecipie
                     </p>
                   </div>
                   <Badge variant="outline" className="shrink-0 text-xs">{CONFIDENCE_LABELS[match.confidence] ?? match.confidence}</Badge>
+                  {shared.has(match.investor.id) ? (
+                    <Badge variant="secondary" className="shrink-0 gap-1 text-xs">
+                      <Share2 className="size-3" />
+                      Compartilhado
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1.5 text-xs"
+                      disabled={isPending && sharingId === match.investor.id}
+                      onClick={() => share(match.investor.id)}
+                    >
+                      <Share2 className="size-3.5" />
+                      Compartilhar
+                    </Button>
+                  )}
                   <button
                     type="button"
                     onClick={() => toggleExpanded(match.investor.id)}

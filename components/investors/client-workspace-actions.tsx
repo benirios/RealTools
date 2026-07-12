@@ -252,7 +252,7 @@ export function FindClientOpportunitiesForm({
       <div>
         <h2 className="text-base font-semibold text-foreground">Encontrar oportunidades para este cliente</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          A busca cria oportunidades globais e depois calcula os matches específicos deste cliente.
+          Os imóveis encontrados entram no pipeline deste cliente. Você pode compartilhá-los com outros clientes depois.
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_100px_100px]">

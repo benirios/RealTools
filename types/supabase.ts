@@ -285,6 +285,7 @@ export type Database = {
           id: string
           input_data_hash: string | null
           investor_id: string
+          is_manual_share: boolean
           listing_id: string
           match_score: number
           match_status: string
@@ -306,6 +307,7 @@ export type Database = {
           id?: string
           input_data_hash?: string | null
           investor_id: string
+          is_manual_share?: boolean
           listing_id: string
           match_score: number
           match_status: string
@@ -327,6 +329,7 @@ export type Database = {
           id?: string
           input_data_hash?: string | null
           investor_id?: string
+          is_manual_share?: boolean
           listing_id?: string
           match_score?: number
           match_status?: string
@@ -524,6 +527,7 @@ export type Database = {
           error_message: string | null
           failed_count: number
           id: string
+          investor_id: string | null
           metadata: Json | null
           skipped_count: number
           source: string
@@ -540,6 +544,7 @@ export type Database = {
           error_message?: string | null
           failed_count?: number
           id?: string
+          investor_id?: string | null
           metadata?: Json | null
           skipped_count?: number
           source: string
@@ -556,6 +561,7 @@ export type Database = {
           error_message?: string | null
           failed_count?: number
           id?: string
+          investor_id?: string | null
           metadata?: Json | null
           skipped_count?: number
           source?: string
@@ -566,6 +572,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "listing_import_runs_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listing_import_runs_target_id_fkey"
             columns: ["target_id"]
@@ -581,6 +594,7 @@ export type Database = {
           country: string
           created_at: string | null
           id: string
+          investor_id: string | null
           is_active: boolean
           search_term: string
           source: string
@@ -593,6 +607,7 @@ export type Database = {
           country?: string
           created_at?: string | null
           id?: string
+          investor_id?: string | null
           is_active?: boolean
           search_term: string
           source: string
@@ -605,6 +620,7 @@ export type Database = {
           country?: string
           created_at?: string | null
           id?: string
+          investor_id?: string | null
           is_active?: boolean
           search_term?: string
           source?: string
@@ -612,7 +628,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listing_import_targets_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listings: {
         Row: {
@@ -633,6 +657,7 @@ export type Database = {
           first_seen_at: string | null
           id: string
           images: string[] | null
+          investor_id: string | null
           is_commercial: boolean | null
           last_seen_at: string | null
           lat: number | null
@@ -673,6 +698,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           images?: string[] | null
+          investor_id?: string | null
           is_commercial?: boolean | null
           last_seen_at?: string | null
           lat?: number | null
@@ -713,6 +739,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           images?: string[] | null
+          investor_id?: string | null
           is_commercial?: boolean | null
           last_seen_at?: string | null
           lat?: number | null
@@ -735,7 +762,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       location_insights: {
         Row: {

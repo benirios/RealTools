@@ -5,7 +5,7 @@ import landing from './landing-content.json'
 export async function GET(request: Request) {
   const { userId } = await auth()
   if (userId) {
-    return NextResponse.redirect(new URL('/decision-surface', request.url))
+    return NextResponse.redirect(new URL('/investors', request.url))
   }
 
   return new NextResponse(landing.html, {

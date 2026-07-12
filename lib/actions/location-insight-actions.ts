@@ -27,9 +27,7 @@ export async function enrichListingLocationAction(listingId: string): Promise<Lo
   const result = await enrichScoreAndMatchListing(supabase, userId, listingId, { force: true })
   if (result.error) return errorState(result.error)
 
-  revalidatePath('/imoveis')
   revalidatePath(`/imoveis/${listingId}`)
-  revalidatePath('/decision-surface')
   revalidatePath('/investors')
   return successState('Localização enriquecida, pontuação recalculada e matches atualizados.')
 }
@@ -51,9 +49,7 @@ export async function seedDemoLocationInsightsAction(listingId: string): Promise
   const matching = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (matching.error) return errorState(matching.error)
 
-  revalidatePath('/imoveis')
   revalidatePath(`/imoveis/${listingId}`)
-  revalidatePath('/decision-surface')
   revalidatePath('/investors')
   return successState('Dados de demonstração criados com sucesso.')
 }
@@ -66,9 +62,7 @@ export async function recalculateListingMatchesAction(listingId: string): Promis
   const result = await recalculateMatchesForListing(supabase, userId, listingId, true)
   if (result.error) return errorState(result.error)
 
-  revalidatePath('/imoveis')
   revalidatePath(`/imoveis/${listingId}`)
-  revalidatePath('/decision-surface')
   revalidatePath('/investors')
   return successState(`${result.matchedCount} matches recalculados para este imóvel.`)
 }

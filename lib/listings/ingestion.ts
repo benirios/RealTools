@@ -52,33 +52,63 @@ export function toListingTargetInsert(userId: string, target: ListingImportTarge
 export async function upsertListing(
   supabase: SupabaseLike,
   userId: string,
-  draft: ListingDraft
+  draft: ListingDraft,
+  investorId?: string | null
 ) {
   const now = new Date().toISOString()
+  const base = toListingInsert(userId, draft)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase.from('listings') as any)
+    .select('id, investor_id')
+    .eq('user_id', userId)
+    .eq('source', base.source)
+    .eq('source_url', base.source_url)
+    .maybeSingle()
+
+  const ownedByAnotherClient = Boolean(existing?.investor_id && investorId && existing.investor_id !== investorId)
+
   const insertData: ListingInsert = {
-    ...toListingInsert(userId, draft),
+    ...base,
+    investor_id: ownedByAnotherClient ? existing.investor_id : (investorId ?? existing?.investor_id ?? null),
     last_seen_at: now,
     updated_at:   now,
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('listings') as any).upsert(insertData, {
+  const result = await (supabase.from('listings') as any).upsert(insertData, {
     onConflict: 'user_id,source,source_url',
   })
+
+  if (ownedByAnotherClient && existing) {
+    // Client B's own search independently found a listing client A already
+    // owns — link it into B's pipeline (same effect as a manual share)
+    // rather than silently hiding a real match B's search legitimately found.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('investor_listing_matches') as any)
+      .update({ is_manual_share: true })
+      .eq('user_id', userId)
+      .eq('investor_id', investorId)
+      .eq('listing_id', existing.id)
+  }
+
+  return result
 }
 
 export async function upsertListingImportTarget(
   supabase: SupabaseLike,
   userId: string,
-  target: ListingImportTarget
+  target: ListingImportTarget,
+  investorId?: string | null
 ) {
   const insertData: ListingImportTargetInsert = {
     ...toListingTargetInsert(userId, target),
+    investor_id: investorId ?? null,
     updated_at: new Date().toISOString(),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('listing_import_targets') as any).upsert(insertData, {
-    onConflict: 'user_id,source,country,state,city,search_term',
+    onConflict: 'user_id,investor_id,source,country,state,city,search_term',
   })
 }

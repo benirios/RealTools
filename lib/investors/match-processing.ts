@@ -43,6 +43,7 @@ export type PersistedInvestorMatch = InvestorDealMatch & {
   listing_id: string
   processed_at: string
   deal: MatchDeal
+  is_manual_share: boolean
 }
 
 export type PersistedListingMatch = InvestorDealMatch & {
@@ -51,6 +52,7 @@ export type PersistedListingMatch = InvestorDealMatch & {
   processed_at: string
   investor_email?: string | null
   investor_name?: string | null
+  is_manual_share: boolean
 }
 
 function unique(values: string[]) {
@@ -351,6 +353,7 @@ export async function loadPersistedMatchesForInvestor(
       recommended_action: match.recommended_action ?? '',
       missing_data: Array.isArray(match.missing_data) ? match.missing_data.filter((item): item is string => typeof item === 'string') : [],
       point_id: match.listing_id,
+      is_manual_share: Boolean(match.is_manual_share),
     }]
   })
 }
@@ -402,6 +405,7 @@ export async function loadPersistedMatchesForListing(
       recommended_action: match.recommended_action ?? '',
       missing_data: Array.isArray(match.missing_data) ? match.missing_data.filter((item): item is string => typeof item === 'string') : [],
       point_id: match.listing_id,
+      is_manual_share: Boolean(match.is_manual_share),
     }]
   })
 }

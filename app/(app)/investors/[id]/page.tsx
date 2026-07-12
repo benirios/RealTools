@@ -14,7 +14,17 @@ import {
   FindClientOpportunitiesForm,
   RecalculateClientWorkspaceButton,
 } from '@/components/investors/client-workspace-actions'
+import {
+  ClientImportTargetsList,
+  CreateClientImportTargetForm,
+  type ClientImportTarget,
+} from '@/components/investors/client-import-targets'
+import { ImportRunsTable, type ImportRun } from '@/components/listings/import-runs-table'
+import { ImoveisGrid, type ListingSummary } from '@/components/listings/imoveis-grid'
+import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
 import { loadDeals, loadPersistedMatchesForInvestor, type MatchDeal, type PersistedInvestorMatch } from '@/lib/investors/match-processing'
+import { loadClientListingIds } from '@/lib/listings/client-listings'
+import { loadDecisionOpportunities } from '@/lib/listings/decision-data'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/supabase'
 
@@ -26,10 +36,13 @@ type PageProps = {
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 
-type WorkspaceTab = 'overview' | 'matches' | 'pipeline' | 'map' | 'saved' | 'exports'
+type WorkspaceTab = 'overview' | 'matches' | 'pipeline' | 'map' | 'saved' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
 
 const TABS: Array<{ value: WorkspaceTab; label: string }> = [
   { value: 'overview', label: 'Visão geral' },
+  { value: 'pesquisas', label: 'Pesquisas' },
+  { value: 'imoveis', label: 'Imóveis' },
+  { value: 'decisao', label: 'Decisão' },
   { value: 'matches', label: 'Matches' },
   { value: 'pipeline', label: 'Pipeline' },
   { value: 'map', label: 'Mapa' },
@@ -712,6 +725,58 @@ function InvestorExportsTab({
   )
 }
 
+function PesquisasTab({
+  client,
+  targets,
+  runs,
+}: {
+  client: InvestorRow
+  targets: ClientImportTarget[]
+  runs: ImportRun[]
+}) {
+  return (
+    <section className="space-y-6">
+      <FindClientOpportunitiesForm
+        clientId={client.id}
+        defaultLocation={defaultSearchLocation(client)}
+        defaultSearchTerm={defaultSearchTerm(client)}
+      />
+
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">Alvos de importação salvos</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Buscas OLX salvas para este cliente, para execuções repetidas.</p>
+      </div>
+      <CreateClientImportTargetForm clientId={client.id} />
+      <ClientImportTargetsList clientId={client.id} targets={targets} />
+
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">Execuções recentes</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Buscas feitas para este cliente, salvas ou avulsas.</p>
+      </div>
+      <ImportRunsTable runs={runs} />
+    </section>
+  )
+}
+
+function ImoveisTab({ listings }: { listings: ListingSummary[] }) {
+  if (listings.length === 0) {
+    return (
+      <section className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+        <h2 className="text-lg font-semibold text-foreground">Nenhum imóvel neste pipeline ainda</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Use a aba Pesquisas para buscar imóveis para este cliente, ou compartilhe um imóvel de outro cliente com ele.
+        </p>
+      </section>
+    )
+  }
+
+  return <ImoveisGrid listings={listings} />
+}
+
+function DecisaoTab({ clientId, opportunities, loadError }: { clientId: string; opportunities: DecisionOpportunity[]; loadError?: string }) {
+  return <DecisionSurface opportunities={opportunities} loadError={loadError} emptyStateHref={`/investors/${clientId}?tab=pesquisas`} />
+}
+
 export default async function InvestorDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params
   const query = await searchParams
@@ -736,6 +801,47 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   const { getOmSendsForInvestorAction } = await import('@/lib/actions/om-actions')
   const omSends = tab === 'exports' ? await getOmSendsForInvestorAction(client.id) : []
 
+  let importTargets: ClientImportTarget[] = []
+  let importRuns: ImportRun[] = []
+  if (tab === 'pesquisas') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const targetsResult = await (supabase.from('listing_import_targets') as any)
+      .select('id, source, country, state, city, search_term, is_active')
+      .eq('user_id', userId)
+      .eq('investor_id', client.id)
+      .order('city', { ascending: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const runsResult = await (supabase.from('listing_import_runs') as any)
+      .select('id, source, status, created_count, updated_count, skipped_count, failed_count, error_message, started_at, completed_at')
+      .eq('user_id', userId)
+      .eq('investor_id', client.id)
+      .order('created_at', { ascending: false })
+      .limit(12)
+    importTargets = (targetsResult.data ?? []) as ClientImportTarget[]
+    importRuns = (runsResult.data ?? []) as ImportRun[]
+  }
+
+  let clientListings: ListingSummary[] = []
+  let decisionOpportunities: DecisionOpportunity[] = []
+  let decisionLoadError: string | undefined
+  if (tab === 'imoveis' || tab === 'decisao') {
+    const clientListingIds = await loadClientListingIds(supabase, userId, client.id)
+    if (tab === 'imoveis' && clientListingIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('listings') as any)
+        .select('id, title, price_text, price_amount, city, neighborhood, state, address_text, location_text, commercial_type, property_type, confidence, source_url, first_seen_at, images, enrichment_status, matching_status')
+        .eq('user_id', userId)
+        .in('id', clientListingIds)
+        .order('first_seen_at', { ascending: false })
+      clientListings = (data ?? []) as ListingSummary[]
+    }
+    if (tab === 'decisao') {
+      const result = await loadDecisionOpportunities(supabase, userId, { listingIds: clientListingIds })
+      decisionOpportunities = result.opportunities
+      decisionLoadError = result.loadError
+    }
+  }
+
   return (
     <PageContent>
     <div className="space-y-6">
@@ -748,7 +854,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Workspace do cliente</p>
             <h1 className="text-3xl font-semibold leading-tight text-foreground">{client.name}</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              As melhores oportunidades para este cliente, sem duplicar imóveis: matches, shortlist, mapa, notas e busca contextual sobre o motor global.
+              Pipeline deste cliente: pesquise imóveis para ele, acompanhe o que foi encontrado, ranqueie por oportunidade e gerencie matches, shortlist, mapa e notas.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -757,12 +863,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
           </div>
         </div>
       </div>
-
-      <FindClientOpportunitiesForm
-        clientId={client.id}
-        defaultLocation={defaultSearchLocation(client)}
-        defaultSearchTerm={defaultSearchTerm(client)}
-      />
 
       <nav className="flex gap-2 overflow-x-auto border-b border-border">
         {TABS.map((item) => (
@@ -782,6 +882,9 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       </nav>
 
       {tab === 'overview' && <OverviewTab client={client} matches={matches} clientRows={clientRows} />}
+      {tab === 'pesquisas' && <PesquisasTab client={client} targets={importTargets} runs={importRuns} />}
+      {tab === 'imoveis' && <ImoveisTab listings={clientListings} />}
+      {tab === 'decisao' && <DecisaoTab clientId={client.id} opportunities={decisionOpportunities} loadError={decisionLoadError} />}
       {tab === 'matches' && <MatchesTab client={client} matches={matches} clientRows={clientRows} />}
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}
       {tab === 'map' && <ClientMapTab clientId={client.id} matches={matches} selectedOpportunityId={selectedOpportunityId} />}
@@ -793,8 +896,6 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
         <span>{matches.length} matches específicos</span>
         <span>·</span>
         <span>{clientRows.filter((row) => row.status === 'saved').length} salvos</span>
-        <span>·</span>
-        <span>oportunidades continuam globais</span>
       </div>
     </div>
     </PageContent>

@@ -9,6 +9,7 @@ import type { SupabaseLike } from '@/lib/supabase/types'
 type StartImportRunInput = {
   source: ListingSource
   targetId?: string | null
+  investorId?: string | null
   metadata?: Json
 }
 
@@ -25,10 +26,11 @@ export async function startImportRun(
   input: StartImportRunInput
 ): Promise<{ data: ImportRunRow | null; error: unknown }> {
   const insertData: ImportRunInsert = {
-    user_id:   userId,
-    source:    input.source,
-    target_id: input.targetId ?? null,
-    metadata:  input.metadata ?? {},
+    user_id:     userId,
+    source:      input.source,
+    target_id:   input.targetId ?? null,
+    investor_id: input.investorId ?? null,
+    metadata:    input.metadata ?? {},
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

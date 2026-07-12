@@ -138,7 +138,6 @@ export async function recalculateAllMatchesAction(): Promise<{ ok: boolean; mess
   const result = await recalculateAllMatches(supabase, userId, true)
 
   revalidatePath('/investors')
-  revalidatePath('/imoveis')
 
   return result.error
     ? { ok: false, message: result.error }

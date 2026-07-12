@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Building2, MapPinned, Search, Target, UserRoundSearch } from 'lucide-react'
+import { MapPinned, UserRoundSearch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function NavItem({
@@ -37,11 +37,8 @@ export function SidebarNav() {
 
   return (
     <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
-      <NavItem href="/listings/import" label="Pesquisas" icon={Search} isActive={pathname.startsWith('/listings')} />
-      <NavItem href="/imoveis" label="Imóveis" icon={Building2} isActive={pathname.startsWith('/imoveis')} />
-      <NavItem href="/inteligencia-local" label="Intel. local" icon={MapPinned} isActive={pathname.startsWith('/inteligencia-local')} />
       <NavItem href="/investors" label="Clientes" icon={UserRoundSearch} isActive={pathname.startsWith('/investors')} />
-      <NavItem href="/decision-surface" label="Decisão" icon={Target} isActive={pathname.startsWith('/decision-surface')} />
+      <NavItem href="/inteligencia-local" label="Intel. local" icon={MapPinned} isActive={pathname.startsWith('/inteligencia-local')} />
     </nav>
   )
 }

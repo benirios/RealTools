@@ -1,8 +1,6 @@
-import { redirect } from 'next/navigation'
-import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
-import { PageContent } from '@/components/page-content'
-import { auth } from '@clerk/nextjs/server'
-import { createSupabaseServiceClient } from '@/lib/supabase/service'
+import 'server-only'
+import type { DecisionOpportunity } from '@/components/listings/decision-surface'
+import type { SupabaseLike } from '@/lib/supabase/types'
 import type { Database, Json } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
@@ -130,26 +128,20 @@ function buildLastProcessed(listing: ListingRow, score: ScoreRow | null) {
   ].filter(Boolean).sort().at(-1) ?? null
 }
 
-export default async function DecisionSurfacePage() {
-  const { userId } = await auth()
-  if (!userId) redirect('/auth/login')
-
-  const supabase = createSupabaseServiceClient()
+export async function loadDecisionOpportunities(
+  supabase: SupabaseLike,
+  userId: string,
+  options: { listingIds?: string[] } = {}
+): Promise<{ opportunities: DecisionOpportunity[]; loadError?: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: listingData, error: listingError } = await (supabase.from('listings') as any)
-    .select('*')
-    .eq('user_id', userId)
+  let query = (supabase.from('listings') as any).select('*').eq('user_id', userId)
+  if (options.listingIds) query = query.in('id', options.listingIds)
+
+  const { data: listingData, error: listingError } = await query
     .order('created_at', { ascending: false }) as { data: ListingRow[] | null; error: LoadError }
 
   if (listingError) {
-    return (
-      <PageContent>
-        <DecisionSurface
-          opportunities={[]}
-          loadError={listingError.message ?? 'Não foi possível carregar os imóveis.'}
-        />
-      </PageContent>
-    )
+    return { opportunities: [], loadError: listingError.message ?? 'Não foi possível carregar os imóveis.' }
   }
 
   const listings = (listingData ?? []).filter((listing) => listing.is_commercial !== false)
@@ -279,9 +271,5 @@ export default async function DecisionSurfacePage() {
     }
   })
 
-  return (
-    <PageContent>
-      <DecisionSurface opportunities={opportunities} />
-    </PageContent>
-  )
+  return { opportunities }
 }
