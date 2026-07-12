@@ -101,7 +101,7 @@ export default async function ListingOmPage({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={i}
-                src={url}
+                src={`/api/proxy-image?url=${encodeURIComponent(url)}`}
                 alt={`Foto do imóvel ${i + 1}`}
                 className="rounded-md object-cover w-full"
                 style={{ aspectRatio: '16/9' }}

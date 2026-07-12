@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListingImages } from '@/components/listings/listing-images'
 import { ListingDescription } from '@/components/listings/listing-description'
-import { ListingInvestorMatches } from '@/components/listings/listing-investor-matches'
 import { LocationInsightAction } from '@/components/listings/location-insight-action'
 import { LocationInsightCard } from '@/components/listings/location-insight-card'
 import { OpportunityScoreCard } from '@/components/listings/opportunity-score-card'
@@ -508,8 +507,6 @@ export default async function ImovelDetailPage({
         locationInsightAvailable={Boolean(locationInsight)}
         initialScores={scoreEntries}
       />
-
-      <ListingInvestorMatches matches={investorMatches} />
 
       <OmRecipientsCard
         listingId={listing.id}
