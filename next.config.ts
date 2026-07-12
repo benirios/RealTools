@@ -9,9 +9,11 @@ const repoRoot = dirname(fileURLToPath(import.meta.url))
 // production Clerk instances use a custom subdomain like clerk.yourdomain.com —
 // ADD THAT DOMAIN HERE once a production Clerk instance is provisioned) plus
 // Cloudflare Turnstile (bot protection) and the clerk-telemetry.com beacon.
+// script-src needs blob: for the landing page (app/landing-content.json) — its
+// unpacker loads React/ReactDOM/Babel-standalone as blob: URL <script src>s.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
