@@ -3,10 +3,11 @@ import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { PageContent } from '@/components/page-content'
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, MapPin, Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ListingImages } from '@/components/listings/listing-images'
+import { ListingFormModal } from '@/components/listings/listing-form-modal'
 import { ListingDescription } from '@/components/listings/listing-description'
 import { LocationInsightAction } from '@/components/listings/location-insight-action'
 import { LocationInsightCard } from '@/components/listings/location-insight-card'
@@ -152,12 +153,20 @@ function ClientOpportunityRecommendationView({
           <ArrowLeft className="size-4" />
           Voltar ao workspace do cliente
         </Link>
-        <Button asChild variant="outline" size="sm">
-          <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="mr-2 size-4" />
-            Ver no OLX
-          </a>
-        </Button>
+        <div className="flex gap-2">
+          <ListingFormModal
+            listing={listing}
+            trigger={<Button variant="outline" size="sm"><Pencil className="mr-2 size-4" />Editar</Button>}
+          />
+          {listing.source_url && (
+            <Button asChild variant="outline" size="sm">
+              <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 size-4" />
+                Ver no OLX
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
 
       <section className="rounded-md border border-border bg-card p-5 md:p-6">
@@ -407,12 +416,20 @@ export default async function ImovelDetailPage({
               </div>
             )}
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 size-4" />
-              Ver no OLX
-            </a>
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <ListingFormModal
+              listing={listing}
+              trigger={<Button variant="outline" size="sm"><Pencil className="mr-2 size-4" />Editar</Button>}
+            />
+            {listing.source_url && (
+              <Button asChild variant="outline" size="sm">
+                <a href={listing.source_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 size-4" />
+                  Ver no OLX
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">

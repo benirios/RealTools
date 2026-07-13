@@ -20,6 +20,7 @@ import {
 } from '@/components/investors/client-import-targets'
 import { ImportRunsTable, type ImportRun } from '@/components/listings/import-runs-table'
 import { ImoveisGrid, type ListingSummary } from '@/components/listings/imoveis-grid'
+import { ListingFormModal } from '@/components/listings/listing-form-modal'
 import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
 import { loadDeals, loadPersistedMatchesForInvestor, type MatchDeal, type PersistedInvestorMatch } from '@/lib/investors/match-processing'
 import { loadClientListingIds } from '@/lib/listings/client-listings'
@@ -486,19 +487,31 @@ function PesquisasTab({
   )
 }
 
-function ImoveisTab({ listings }: { listings: ListingSummary[] }) {
+function ImoveisTab({ clientId, listings }: { clientId: string; listings: ListingSummary[] }) {
   if (listings.length === 0) {
     return (
-      <section className="rounded-md border border-dashed border-border bg-card p-8 text-center">
-        <h2 className="text-lg font-semibold text-foreground">Nenhum imóvel neste pipeline ainda</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Use a aba Pesquisas para buscar imóveis para este cliente, ou compartilhe um imóvel de outro cliente com ele.
-        </p>
+      <section className="space-y-4">
+        <div className="flex justify-end">
+          <ListingFormModal investorId={clientId} />
+        </div>
+        <div className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+          <h2 className="text-lg font-semibold text-foreground">Nenhum imóvel neste pipeline ainda</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            Use a aba Pesquisas para buscar imóveis para este cliente, cadastre um manualmente, ou compartilhe um imóvel de outro cliente com ele.
+          </p>
+        </div>
       </section>
     )
   }
 
-  return <ImoveisGrid listings={listings} />
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <ListingFormModal investorId={clientId} />
+      </div>
+      <ImoveisGrid listings={listings} />
+    </div>
+  )
 }
 
 function DecisaoTab({ clientId, opportunities, loadError }: { clientId: string; opportunities: DecisionOpportunity[]; loadError?: string }) {
@@ -610,7 +623,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
 
       {tab === 'overview' && <OverviewTab client={client} matches={matches} clientRows={clientRows} />}
       {tab === 'pesquisas' && <PesquisasTab client={client} targets={importTargets} runs={importRuns} />}
-      {tab === 'imoveis' && <ImoveisTab listings={clientListings} />}
+      {tab === 'imoveis' && <ImoveisTab clientId={client.id} listings={clientListings} />}
       {tab === 'decisao' && <DecisaoTab clientId={client.id} opportunities={decisionOpportunities} loadError={decisionLoadError} />}
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}
       {tab === 'exports' && <InvestorExportsTab investorId={client.id} sends={omSends} />}

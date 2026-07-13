@@ -47,7 +47,7 @@ export type DecisionOpportunity = {
   lat: number | null
   lng: number | null
   tags: string[]
-  sourceUrl: string
+  sourceUrl: string | null
   enrichmentStatus: string
   matchingStatus: string
   enrichmentLastProcessedAt: string | null

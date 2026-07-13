@@ -673,7 +673,7 @@ export type Database = {
           raw_payload: Json | null
           reasoning: string | null
           source: string
-          source_url: string
+          source_url: string | null
           state: string | null
           tags: string[] | null
           title: string
@@ -714,7 +714,7 @@ export type Database = {
           raw_payload?: Json | null
           reasoning?: string | null
           source: string
-          source_url: string
+          source_url?: string | null
           state?: string | null
           tags?: string[] | null
           title: string
@@ -755,7 +755,7 @@ export type Database = {
           raw_payload?: Json | null
           reasoning?: string | null
           source?: string
-          source_url?: string
+          source_url?: string | null
           state?: string | null
           tags?: string[] | null
           title?: string
