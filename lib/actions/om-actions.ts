@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServiceClient } from '@/lib/supabase/service'
 import { createResendClient } from '@/lib/resend'
 import { OmEmailHtml } from '@/lib/email/om-template'
+import { markClientOpportunitySentAction } from '@/lib/actions/client-opportunity-actions'
 import type { Database } from '@/types/supabase'
 
 type InvestorOmSendRow = Database['public']['Tables']['investor_om_sends']['Row']
@@ -114,6 +115,7 @@ export async function sendOmAction(
       await (supabase.from('investor_om_sends') as any)
         .update({ om_sent_at: new Date().toISOString() })
         .eq('id', sendRow.id)
+      await markClientOpportunitySentAction(investor.id, listingId)
       sent++
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'erro desconhecido'

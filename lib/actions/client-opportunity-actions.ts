@@ -207,6 +207,32 @@ export async function updateClientOpportunityStatusAction(
     : { ok: true, message: 'Status atualizado.' }
 }
 
+// Called after a successful OM send. Only advances suggested/saved -> sent —
+// never overwrites interested/negotiating/closed/rejected with a re-send.
+export async function markClientOpportunitySentAction(clientId: string, opportunityId: string): Promise<void> {
+  const { userId } = await auth()
+  if (!userId) return
+
+  const supabase = createSupabaseServiceClient()
+  const existing = await getExistingClientOpportunity(supabase, userId, clientId, opportunityId)
+  if (existing && existing.status !== 'suggested' && existing.status !== 'saved') return
+
+  const matchScore = await getMatchScore(supabase, userId, clientId, opportunityId)
+
+  await upsertClientOpportunity(supabase, {
+    user_id: userId,
+    client_id: clientId,
+    opportunity_id: opportunityId,
+    status: 'sent',
+    match_score: matchScore ?? existing?.match_score ?? null,
+    notes: existing?.notes ?? null,
+    last_action_at: new Date().toISOString(),
+  })
+
+  revalidatePath(`/investors/${clientId}`)
+  revalidatePath(`/imoveis/${opportunityId}`)
+}
+
 export async function updateClientOpportunityNotesAction(formData: FormData): Promise<{ ok: boolean; message: string }> {
   const { userId } = await auth()
   if (!userId) redirect('/auth/login')
