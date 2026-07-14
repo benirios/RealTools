@@ -70,6 +70,7 @@ export async function createManualListingAction(
       description:     parsed.data.description ?? null,
       images:          parsed.data.images,
       confidence:      100,
+      is_favorited:    true,
       first_seen_at:   now,
       last_seen_at:    now,
     })

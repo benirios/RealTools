@@ -139,7 +139,20 @@ async function syncClientOpportunitiesForMatches(
   if (listingIds?.length) matchQuery = matchQuery.in('listing_id', listingIds)
 
   const { data: matches } = await matchQuery as { data: Array<Pick<InvestorListingMatchRow, 'listing_id' | 'match_score'>> | null }
-  const rows = matches ?? []
+  const candidateRows = matches ?? []
+  if (candidateRows.length === 0) return 0
+
+  // Only sync listings the broker has actually favorited into Imóveis —
+  // a scraped listing still sitting in Achados shouldn't show up in Pipeline.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: favorited } = await (supabase.from('listings') as any)
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_favorited', true)
+    .in('id', candidateRows.map((row) => row.listing_id)) as { data: Array<{ id: string }> | null }
+
+  const favoritedIds = new Set((favorited ?? []).map((row) => row.id))
+  const rows = candidateRows.filter((row) => favoritedIds.has(row.listing_id))
   if (rows.length === 0) return 0
 
   const opportunityIds = rows.map((row) => row.listing_id)
@@ -418,7 +431,7 @@ export async function runClientOlxSearchImportAction(
     revalidatePath(`/listings/import/runs/${run.id}`)
 
     return {
-      message: `${savedCount} imóveis salvos no pipeline do cliente, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos; ${syncedCount} ligados a este cliente.`,
+      message: `${savedCount} imóveis salvos para revisão em Achados, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos; ${syncedCount} ligados a este cliente.`,
     }
   } catch (error) {
     const message = getErrorMessage(error)
@@ -565,7 +578,7 @@ export async function runClientImportTargetAction(clientId: string, targetId: st
     revalidatePath(`/investors/${clientId}`)
     return {
       ok: failedCount === 0,
-      message: `${createdCount} salvos, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos.`,
+      message: `${createdCount} salvos para revisão em Achados, ${failedCount} falharam. ${automation.automation.enrichedCount} enriquecidos.`,
     }
   } catch (error) {
     const message = getErrorMessage(error)
@@ -614,4 +627,36 @@ export async function shareListingWithInvestorAction(listingId: string, investor
   revalidatePath(`/investors/${investorId}`)
   revalidatePath(`/imoveis/${listingId}`)
   return { ok: true, message: 'Imóvel compartilhado com o cliente.' }
+}
+
+export async function toggleListingFavoriteAction(listingId: string, favorited: boolean): Promise<ImportActionResult> {
+  const { userId } = await auth()
+  if (!userId) redirect('/auth/login')
+
+  const supabase = createSupabaseServiceClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listing } = await (supabase.from('listings') as any)
+    .select('id, investor_id')
+    .eq('id', listingId)
+    .eq('user_id', userId)
+    .maybeSingle() as { data: { id: string; investor_id: string | null } | null }
+
+  if (!listing) return { ok: false, message: 'Imóvel não encontrado.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listings') as any)
+    .update({ is_favorited: favorited })
+    .eq('id', listingId)
+    .eq('user_id', userId)
+
+  if (error) return { ok: false, message: 'Não foi possível atualizar o imóvel.' }
+
+  if (listing.investor_id) revalidatePath(`/investors/${listing.investor_id}`)
+  revalidatePath(`/imoveis/${listingId}`)
+
+  return {
+    ok: true,
+    message: favorited ? 'Imóvel movido para Imóveis.' : 'Imóvel removido de Imóveis.',
+  }
 }

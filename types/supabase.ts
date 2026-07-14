@@ -659,6 +659,7 @@ export type Database = {
           images: string[] | null
           investor_id: string | null
           is_commercial: boolean | null
+          is_favorited: boolean
           last_seen_at: string | null
           lat: number | null
           lng: number | null
@@ -700,6 +701,7 @@ export type Database = {
           images?: string[] | null
           investor_id?: string | null
           is_commercial?: boolean | null
+          is_favorited?: boolean
           last_seen_at?: string | null
           lat?: number | null
           lng?: number | null
@@ -741,6 +743,7 @@ export type Database = {
           images?: string[] | null
           investor_id?: string | null
           is_commercial?: boolean | null
+          is_favorited?: boolean
           last_seen_at?: string | null
           lat?: number | null
           lng?: number | null

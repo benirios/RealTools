@@ -23,7 +23,7 @@ import { ImoveisGrid, type ListingSummary } from '@/components/listings/imoveis-
 import { ListingFormModal } from '@/components/listings/listing-form-modal'
 import { DecisionSurface, type DecisionOpportunity } from '@/components/listings/decision-surface'
 import { loadDeals, loadPersistedMatchesForInvestor, type MatchDeal, type PersistedInvestorMatch } from '@/lib/investors/match-processing'
-import { loadClientListingIds } from '@/lib/listings/client-listings'
+import { loadClientListingIds, loadClientPendingListingIds } from '@/lib/listings/client-listings'
 import { loadDecisionOpportunities } from '@/lib/listings/decision-data'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/supabase'
@@ -36,11 +36,12 @@ type PageProps = {
 type InvestorRow = Database['public']['Tables']['investors']['Row']
 type ClientOpportunityRow = Database['public']['Tables']['client_opportunities']['Row']
 
-type WorkspaceTab = 'overview' | 'pipeline' | 'exports' | 'pesquisas' | 'imoveis' | 'decisao'
+type WorkspaceTab = 'overview' | 'pipeline' | 'exports' | 'pesquisas' | 'achados' | 'imoveis' | 'decisao'
 
 const TABS: Array<{ value: WorkspaceTab; label: string }> = [
   { value: 'overview', label: 'Visão geral' },
   { value: 'pesquisas', label: 'Pesquisas' },
+  { value: 'achados', label: 'Achados' },
   { value: 'imoveis', label: 'Imóveis' },
   { value: 'decisao', label: 'Decisão' },
   { value: 'pipeline', label: 'Pipeline' },
@@ -497,7 +498,7 @@ function ImoveisTab({ clientId, listings }: { clientId: string; listings: Listin
         <div className="rounded-md border border-dashed border-border bg-card p-8 text-center">
           <h2 className="text-lg font-semibold text-foreground">Nenhum imóvel neste pipeline ainda</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Use a aba Pesquisas para buscar imóveis para este cliente, cadastre um manualmente, ou compartilhe um imóvel de outro cliente com ele.
+            Favorite imóveis na aba Achados, cadastre um manualmente, ou compartilhe um imóvel de outro cliente com ele.
           </p>
         </div>
       </section>
@@ -510,6 +511,31 @@ function ImoveisTab({ clientId, listings }: { clientId: string; listings: Listin
         <ListingFormModal investorId={clientId} />
       </div>
       <ImoveisGrid listings={listings} />
+    </div>
+  )
+}
+
+function AchadosTab({ clientId, listings }: { clientId: string; listings: ListingSummary[] }) {
+  if (listings.length === 0) {
+    return (
+      <section className="rounded-md border border-dashed border-border bg-card p-8 text-center">
+        <h2 className="text-lg font-semibold text-foreground">Nenhum imóvel para revisar</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Imóveis encontrados pela aba Pesquisas aparecem aqui para revisão. Favorite os que fizerem sentido para este cliente — eles entram na aba Imóveis.
+        </p>
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href={tabHref(clientId, 'pesquisas')}>Ir para Pesquisas</Link>
+        </Button>
+      </section>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {listings.length} imóve{listings.length === 1 ? 'l' : 'is'} encontrado{listings.length === 1 ? '' : 's'} para revisar. Favorite para adicionar à aba Imóveis deste cliente.
+      </p>
+      <ImoveisGrid listings={listings} pendingReview />
     </div>
   )
 }
@@ -562,14 +588,16 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
   }
 
   let clientListings: ListingSummary[] = []
+  let pendingListings: ListingSummary[] = []
   let decisionOpportunities: DecisionOpportunity[] = []
   let decisionLoadError: string | undefined
+  const LISTING_SUMMARY_COLUMNS = 'id, title, price_text, price_amount, city, neighborhood, state, address_text, location_text, commercial_type, property_type, confidence, source_url, first_seen_at, images, enrichment_status, matching_status'
   if (tab === 'imoveis' || tab === 'decisao') {
     const clientListingIds = await loadClientListingIds(supabase, userId, client.id)
     if (tab === 'imoveis' && clientListingIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('listings') as any)
-        .select('id, title, price_text, price_amount, city, neighborhood, state, address_text, location_text, commercial_type, property_type, confidence, source_url, first_seen_at, images, enrichment_status, matching_status')
+        .select(LISTING_SUMMARY_COLUMNS)
         .eq('user_id', userId)
         .in('id', clientListingIds)
         .order('first_seen_at', { ascending: false })
@@ -579,6 +607,18 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
       const result = await loadDecisionOpportunities(supabase, userId, { listingIds: clientListingIds })
       decisionOpportunities = result.opportunities
       decisionLoadError = result.loadError
+    }
+  }
+  if (tab === 'achados') {
+    const pendingIds = await loadClientPendingListingIds(supabase, userId, client.id)
+    if (pendingIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('listings') as any)
+        .select(LISTING_SUMMARY_COLUMNS)
+        .eq('user_id', userId)
+        .in('id', pendingIds)
+        .order('first_seen_at', { ascending: false })
+      pendingListings = (data ?? []) as ListingSummary[]
     }
   }
 
@@ -623,6 +663,7 @@ export default async function InvestorDetailPage({ params, searchParams }: PageP
 
       {tab === 'overview' && <OverviewTab client={client} matches={matches} clientRows={clientRows} />}
       {tab === 'pesquisas' && <PesquisasTab client={client} targets={importTargets} runs={importRuns} />}
+      {tab === 'achados' && <AchadosTab clientId={client.id} listings={pendingListings} />}
       {tab === 'imoveis' && <ImoveisTab clientId={client.id} listings={clientListings} />}
       {tab === 'decisao' && <DecisaoTab clientId={client.id} opportunities={decisionOpportunities} loadError={decisionLoadError} />}
       {tab === 'pipeline' && <PipelineTab client={client} items={pipelineItems} />}

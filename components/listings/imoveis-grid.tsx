@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2, Loader2, MapPin, Trash2 } from 'lucide-react'
+import { Building2, Loader2, MapPin, Star, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { toggleListingFavoriteAction } from '@/lib/actions/client-opportunity-actions'
 import type { Database } from '@/types/supabase'
 
 type ListingRow = Database['public']['Tables']['listings']['Row']
@@ -50,12 +51,28 @@ function formatPrice(listing: ListingSummary) {
   }).format(Number(listing.price_amount))
 }
 
-export function ImoveisGrid({ listings }: { listings: ListingSummary[] }) {
+export function ImoveisGrid({ listings, pendingReview = false }: { listings: ListingSummary[]; pendingReview?: boolean }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteSingleId, setDeleteSingleId] = useState<string | null>(null)
+  const [favoritingId, setFavoritingId] = useState<string | null>(null)
+
+  async function favorite(id: string) {
+    setFavoritingId(id)
+    try {
+      const result = await toggleListingFavoriteAction(id, true)
+      if (result.ok) {
+        toast.success(result.message)
+        router.refresh()
+      } else {
+        toast.error(result.message)
+      }
+    } finally {
+      setFavoritingId(null)
+    }
+  }
 
   const allSelected = listings.length > 0 && listings.every((l) => selected.has(l.id))
   const someSelected = selected.size > 0
@@ -228,6 +245,22 @@ export function ImoveisGrid({ listings }: { listings: ListingSummary[] }) {
                   </div>
                 </div>
               </Link>
+
+              {pendingReview && (
+                <div className="border-t border-border p-3" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    disabled={favoritingId === listing.id}
+                    onClick={() => favorite(listing.id)}
+                  >
+                    {favoritingId === listing.id
+                      ? <Loader2 className="mr-2 size-4 animate-spin" />
+                      : <Star className="mr-2 size-4" />}
+                    Favoritar
+                  </Button>
+                </div>
+              )}
 
               {/* Single delete — bottom-right, visible on hover */}
               <button
